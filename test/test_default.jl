@@ -1,4 +1,4 @@
 # test_default
 function test_default()
-    @test CTAppTemplate.greet() isa Nothing
+    @test CTDiffFlow.greet() isa Nothing
 end

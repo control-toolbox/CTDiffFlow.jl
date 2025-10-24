@@ -1,6 +1,6 @@
-# CTAppTemplate
+# CTDiffFlow
 
-Documentation for [CTAppTemplate](https://github.com/control-toolbox/CTAppTemplate.jl).
+Documentation for [CTDiffFlow](https://github.com/control-toolbox/CTDiffFlow.jl).
 
 ## Reproducibility
 

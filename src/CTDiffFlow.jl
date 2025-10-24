@@ -1,4 +1,4 @@
-module CTAppTemplate
+module CTDiffFlow
 
 greet() = print("Hello World!")
 
