@@ -1,0 +1,144 @@
+% ./Jgarticle.sty
+% auteur Joseph Gergaud
+% Version article oct 2025
+%
+% hauteur
+\textheight 287mm   %hauteur d'une page avec 1 cm en bas en plus
+\addtolength{\textheight}{-25.4mm}
+\topmargin -10.4mm
+\addtolength{\textheight}{-\topmargin}
+\addtolength{\textheight}{-\headheight}
+\addtolength{\textheight}{-\headsep}
+\footskip 8mm
+\addtolength{\textheight}{-\footskip}
+
+%largeur
+\oddsidemargin -5.4mm
+\evensidemargin -10.4mm
+\marginparwidth 0mm
+\marginparsep 0mm
+\textwidth 210mm    %largeur d'une page 
+\addtolength{\textwidth}{-25.4mm}
+\addtolength{\textwidth}{-25.4mm}
+\addtolength{\textwidth}{-\oddsidemargin}
+\addtolength{\textwidth}{-\evensidemargin}
+
+%\usepackage[french]{babel}
+\renewcommand{\tilde}{\widetilde}
+\renewcommand{\hat}{\widehat}
+\usepackage[utf8]{inputenc}
+
+%Les couleurs
+\usepackage{xcolor}
+%\definecolor{red}{rgb}{0.6,0.04,0.04}
+\definecolor{green}{rgb}{0.06,0.5,0.06}
+\definecolor{blue}{rgb}{0.06,0.06,0.6}
+\definecolor{red}{rgb}{0.6,0.04,0.04}
+\definecolor{grey}{rgb}{0.6,0.6,0.6}
+\definecolor{black}{rgb}{0,0,0}
+\definecolor{rose}{RGB}{254,40,255}
+\newcommand{\cblue}[1]{{\color{blue} #1}}
+\newcommand{\cred}[1]{{\color{red} #1}}
+\newcommand{\cgreen}[1]{{\color{green} #1}}
+\newcommand{\crose}[1]{{\color{rose} #1}}
+\def\empha{\cblue}
+\def\emphb{\cred}
+\def\emphc{\cgreen}
+\def\emphd{\crose}
+\def\ea{\empha}
+\def\eb{\emphb}
+\def\ec{\emphc}
+\def\ed{\emphd}
+
+%La commande pour la todo_list
+\newcommand{\todo}[1]{\noindent {\color{blue} \it Note: #1}}
+% Numerotations
+% ------------
+\renewcommand{\thesection}{\arabic{section}} 
+\renewcommand{\thesubsection}{\thesection.\arabic{subsection}} 
+\renewcommand{\thesubsubsection}{\thesubsection.\arabic{subsubsection}} 
+\renewcommand{\labelenumi}{(\roman{enumi})} 
+\renewcommand{\theenumi}{\roman{enumi}}
+\renewcommand{\labelitemi}{aaa}%$\bullet$}
+%
+% Redefinition d'environnement pour la version française
+% ------------------------------------------------------
+\theoremstyle{plain}
+\newtheorem{thm}{Th\'eor\`eme}[section] 
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{cor}[thm]{Corollaire}
+\newtheorem{lemme}[thm]{Lemme}
+\theoremstyle{definition}
+\newtheorem{defi}[thm]{D\'efinition}
+%\theorembodyfont{\rmfamily}
+\newtheorem{rmq}[thm]{Remarque}
+\newtheorem{exem}[thm]{Exemple} 
+\newtheorem{loi1}[thm]{Loi}
+\newtheorem{exer}{Exercice}[section]
+\newtheorem{graph1}[thm]{Repr\'esentation graphique} 
+\newenvironment{preuve}{\par\indent
+{\em Preuve.\/}}{\raisebox{-.2ex}{$\Box$}}
+\newenvironment{demon}{\noindent%\par\indent
+{\em D\'emonstration.}}{\raisebox{-.2ex}{$\Box$}} 
+\newcommand{\rem}{\par\indent
+{\em Remarque.\/}}
+
+\newcommand{\dsum}{\displaystyle \sum}
+% definition des ensembles
+% ------------------------
+\usepackage{xspace}
+\newcommand{\IN}{\mbox{$\mathbf{N}$}\xspace}
+\newcommand{\In}{\mbox{\scriptsize $\mathbf{N}$}\xspace}
+\newcommand{\IZ}{\mbox{$\mathbf{Z}$}\xspace}
+\newcommand{\Iz}{\mbox{\scriptsize $\mathbf{Z}$}\xspace}
+\newcommand{\IQ}{\mbox{$\mathbf{Q}$}\xspace}
+\newcommand{\Iq}{\mbox{\scriptsize $\mathbf{Q}$}\xspace}
+\newcommand{\IR}{\mbox{$\mathbf{R}$}\xspace}
+\newcommand{\Ir}{\mbox{\scriptsize $\mathbf{R}$}\xspace}
+\newcommand{\IC}{\mbox{$\mathbf{C}$}\xspace}
+\newcommand{\Ic}{\mbox{\scriptsize $\mathbf{C}$}\xspace}
+
+% nouvelles définitions
+% ---------------------
+\newcommand{\fonction}[4]{
+  \begin{eqnarray*}
+    {#1} &\longrightarrow& {#2} \\
+        {#3}     &\longmapsto& {#4}
+  \end{eqnarray*}
+}
+
+%
+% 
+\def\veps{\varepsilon}
+\def\vphi{\varphi}
+\def\Im{\mathrm{Im}}
+\newcommand{\Min}{\mbox{$Min\;$}}
+\newcommand{\Max}{\mbox{$Max\;$}}
+\newcommand{\ssi}{\mbox{$\Longleftrightarrow$}}
+\newcommand{\tr}{\mbox{}^t}
+\def\cf{\textit{cf.}\xspace}
+\def\apriori{\textit{a priori}\xspace}
+
+\def\hompack{\textsc{Hompack90}\xspace}
+\def\ipopt{\textsc{Ipopt}\xspace}
+\def\lancelot{\textsc{Lancelot}\xspace}
+\def\fortran{\textsc{Fortran}\xspace}
+\def\adifor{\textsc{Adifor}\xspace}
+\def\tapenade{\textsc{Tapenade}\xspace}
+\def\netlib{\textsc{Netlib}\xspace}
+\def\matlab{\textsc{Matlab}\xspace}
+\def\oderkq{\textsc{Ode45}\xspace}
+\def\odeNDFs{\textsc{Ode15s}\xspace}
+\def\rkq{\textsc{Rk4}\xspace}
+\def\rkt{\textsc{Rk3}\xspace}
+\def\rkf{\textsc{Rkf45}\xspace}
+\def\dopri{\textsc{Dopri5}\xspace}
+\def\gauss{\textsc{Gauss}\xspace}
+\def\hybrd{\textsc{Hybrd}\xspace}
+\def\simplicial{\textsc{Simplicial}\xspace}
+\def\mfmax{\textsc{Mfmax}\xspace}
+\def\cotcot{\textsc{Cotcot}\xspace}
+
+
+
+

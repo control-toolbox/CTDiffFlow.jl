@@ -1,0 +1,338 @@
+% -----------------------------------------------------------------------------------------------------------------------------------------
+% Tag a gauche ou a droite : utile pour la numerotation des equations
+%\makeatletter
+%\newcommand{\reqnomode}{\tagsleft@false\let\veqno\@@eqno}
+%\newcommand{\leqnomode}{\tagsleft@true\let\veqno\@@leqno}
+%\makeatother
+
+%table des mati\`eres et compteurs de titres
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+
+%\allowdisplaybreaks %Autorises latex à casser tous les blocs d'equations du style align ou equation.
+\usepackage{pdfsync}
+
+%Draft : to comment at the end
+%\usepackage{showlabels}
+
+%Les enumerations
+\usepackage{enumerate}
+
+%Les images
+\usepackage{graphicx}
+\graphicspath{{figures/pdf/}{figures/}}
+\newcommand{\tfig}{0.33}
+\newcommand{\tfigGrand}{0.39}
+\newcommand{\tfigPetit}{0.3}
+\newcommand{\tfigTrois}{0.3}
+
+%Les dessins
+\usepackage{circuitikz}
+\usetikzlibrary{arrows,shapes,backgrounds,patterns}
+\usepackage{pifont}
+\usepackage{tikzgraphicx}
+\tikzstyle{every picture}+=[remember picture]
+\tikzstyle{na} = [baseline=-.5ex]
+\makeatletter
+\newcommand{\gettikzxy}[3]{%
+  \tikz@scan@one@point\pgfutil@firstofone#1\relax
+  \edef#2{\the\pgf@x}%
+  \edef#3{\the\pgf@y}%
+}
+\makeatother
+
+%Les couleurs
+%\usepackage{xcolor}
+%%\definecolor{red}{rgb}{0.6,0.04,0.04}
+%\definecolor{green}{rgb}{0.06,0.5,0.06}
+%\definecolor{blue}{rgb}{0.06,0.06,0.6}
+%\definecolor{red}{rgb}{0.6,0.04,0.04}
+%\definecolor{grey}{rgb}{0.6,0.6,0.6}
+%\definecolor{black}{rgb}{0,0,0}
+%\definecolor{rose}{RGB}{254,40,255}
+%\newcommand{\cblue}[1]{{\color{blue} #1}}
+%\newcommand{\cred}[1]{{\color{red} #1}}
+%\newcommand{\cgreen}[1]{{\color{green} #1}}
+%\newcommand{\crose}[1]{{\color{rose} #1}}
+%\def\empha{\cblue}
+%\def\emphb{\cred}
+%\def\emphc{\cgreen}
+%\def\emphd{\crose}
+%\def\ea{\empha}
+%\def\eb{\emphb}
+%\def\ec{\emphc}
+%\def\ed{\emphd}
+
+%La commande pour la todo_list
+\newcommand{\todo}[1]{\noindent {\color{blue} \it Note: #1}}
+
+%Quelques commandes
+\renewcommand\ie{\textit{i.e. }}
+
+%Tableau : \'epaisseur des lignes
+\usepackage{booktabs}
+\newcommand{\smallhrule}{\specialrule{0.02em}{0.3em}{0.3em}}
+\newcommand{\medhrule}{\specialrule{0.05em}{0.3em}{0.3em}}
+\newcommand{\bighrule}{\specialrule{0.1em}{0.3em}{0.5em}}
+
+%Les diff\'erents ensembles math\'ematiques
+\usepackage{amsmath}
+\makeatletter
+\makeatother
+
+\usepackage{amssymb}
+\usepackage{mathrsfs}
+\usepackage{mathtools}
+\usepackage{xstring}
+
+%Commandes persos
+\newcommand\cste{a}
+%\usepackage[f]{esvect}
+%\usepackage{kpfonts}
+\newcommand\vvec{\overrightarrow}
+\newcommand{\frp}[2]{
+    \frac{\partial {#1}}{\partial {#2}}
+}
+\newcommand\xt{\tilde{x}}
+\newcommand\ft{\tilde{f}}
+\newcommand\gt{\tilde{g}}
+\newcommand\ct{\tilde{c}}
+\newcommand\Ft{\tilde{F}}
+\newcommand\Ht{\tilde{H}}
+\newcommand\Et{\tilde{E}}
+\newcommand\Jt{\tilde{J}}
+\newcommand\At{\tilde{A}}
+\newcommand\Pt{\tilde{\Phi}}
+\newcommand\lsol{\bar{\lambda}}
+\newcommand\ysol{\bar{y}}
+\newcommand\xsol{\bar{x}}
+\newcommand\usol{\bar{u}}
+\newcommand\zsol{\bar{z}}
+\newcommand\psol{\bar{p}}
+\newcommand\tfsol{\bar{t}_f}
+\newcommand\tsol{\bar{t}\hspace{0.1em}}
+\newcommand\etasol{\bar{\eta}}
+\newcommand\musol{\bar{\mu}}
+\DeclareMathOperator{\ad}{ad}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\lie}{Lie}
+\newcommand{\bocop}{\texttt{Bocop}}
+\newcommand{\hybrj}{\texttt{hybrj}}
+\newcommand{\dopri}{\texttt{dopri5}}
+\newcommand{\dop}{\texttt{dop853}}
+\newcommand{\radau}{\texttt{radau}}
+\newcommand{\minpack}{\texttt{minpack}}
+\newcommand{\tapenade}{\texttt{tapenade}}
+\newcommand{\expmap}[3]{\exp({#2 #3}) (#1)}
+\newcommand{\Hom}{h}
+
+\newcommand{\imax}{i_\mathrm{max}}
+\newcommand{\vmax}{v_\mathrm{max}}
+\newcommand{\af}{\alpha_f}
+
+%Les packages
+\usepackage{stmaryrd}
+
+%Intervalle
+\newcommand{\intervalle}[4]{\mathopen{#1}#2
+                                \mathclose{}\mathpunct{},#3
+                                \mathclose{#4}}
+\newcommand{\intervalleff}[2]{\intervalle{[}{#1}{#2}{]}}
+\newcommand{\intervalleof}[2]{\intervalle{(}{#1}{#2}{]}}
+\newcommand{\intervallefo}[2]{\intervalle{[}{#1}{#2}{)}}
+\newcommand{\intervalleoo}[2]{\intervalle{(}{#1}{#2}{)}}
+\newcommand{\intervalleentier}[2]{\intervalle{\llbracket}{#1}{#2}{\rrbracket}}
+
+%Ensembles de nombres
+\newcommand{\nbSet}[1]{\mathbb{#1}}
+\newcommand{\setPositive}{\text{\bf{\tiny+}}}
+\newcommand{\setNegative}{\mathbb{\tiny-}}
+\newcommand{\setStar}{\text{*}}
+%\newcommand{\N}{\nbSet{N}}
+%\newcommand{\Z}{\nbSet{Z}}
+%\newcommand{\Q}{\nbSet{Q}}
+%\newcommand{\R}{\nbSet{R}}
+%\newcommand{\C}{\nbSet{C}}
+%\newcommand{\R}{\xR}
+
+\newcommand{\setDeco}[2]{
+    \IfEqCase{#2}{
+        {s}{\nbSet{#1}^{\setStar}}
+        {n}{\nbSet{#1}^{\phantom{\setStar}}_{\setNegative}}
+        {p}{\nbSet{#1}^{\phantom{\setStar}}_{\setPositive}}
+        {sn}{\nbSet{#1}^{\setStar}_{\setNegative}}
+        {sp}{\nbSet{#1}^{\setStar}_{\setPositive}}
+    }
+}
+\newcommand{\Ns}{ \ensuremath{\setDeco{N}{s}} }
+\newcommand{\Rn}{ \ensuremath{\setDeco{R}{n}} }
+\newcommand{\Rp}{ \ensuremath{\setDeco{R}{p}} }
+\newcommand{\Rs}{ \ensuremath{\setDeco{R}{s}} }
+\newcommand{\Rsp}{ \ensuremath{\setDeco{R}{sp}} }
+\newcommand{\Rsn}{ \ensuremath{\setDeco{R}{sn}} }
+
+\newcommand{\Ucal}{\mathcal{U}}
+\newcommand{\Acal}{\mathcal{A}}
+\newcommand{\Lcal}{\mathcal{L}}
+\newcommand{\Ccal}{\mathcal{C}}
+\newcommand{\Tcal}{\mathcal{T}}
+
+%Elements differentiel
+%\newcommand{\diff}{\mathop{}\mathopen{}\mathrm{d}}
+\newcommand{\Diff}{ {\rm D} }
+%\newcommand{\diff}{\,{\rm d}}
+
+%Valeur absolue et norme
+%\newcommand{\abs}[1]{\lvert#1\rvert} 
+%\newcommand{\absStyle}[1]{\left\lvert#1\right\rvert}
+%\newcommand{\norme}[1]{\lVert#1\rVert}
+%\newcommand{\normeStyle}[1]{\left\lVert#1\right\rVert}
+
+%Petit o et grand O
+\newcommand{\petito}[1]{o\mathopen{}\left(#1\right)}
+\newcommand{\grandO}[1]{O\mathopen{}\left(#1\right)}
+
+%Ensemble des .. tels que ..
+\newcommand{\enstq}[2]{\left\{#1\mathrel{}\middle|\mathrel{}#2\right\}}
+
+%Produit scalaire
+\newcommand{\prodscal}[2]{\left\langle#1,#2\right\rangle}
+
+%L'arc de cercle pour les champs de Jacobi
+%\usepackage{yhmath}
+
+%---
+\makeatletter
+\let\save@mathaccent\mathaccent
+\newcommand*\if@single[3]{%
+  \setbox0\hbox{${\mathaccent"0362{#1}}^H$}%
+  \setbox2\hbox{${\mathaccent"0362{\kern0pt#1}}^H$}%
+  \ifdim\ht0=\ht2 #3\else #2\fi
+  }
+%The bar will be moved to the right by a half of \macc@kerna, which is computed by amsmath:
+\newcommand*\rel@kern[1]{\kern#1\dimexpr\macc@kerna}
+%If there's a superscript following the bar, then no negative kern may follow the bar;
+%an additional {} makes sure that the superscript is high enough in this case:
+\newcommand*\widebar[1]{\@ifnextchar^{{\wide@bar{#1}{0}}}{\wide@bar{#1}{1}}}
+%Use a separate algorithm for single symbols:
+\newcommand*\wide@bar[2]{\if@single{#1}{\wide@bar@{#1}{#2}{1}}{\wide@bar@{#1}{#2}{2}}}
+\newcommand*\wide@bar@[3]{%
+  \begingroup
+  \def\mathaccent##1##2{%
+%Enable nesting of accents:
+    \let\mathaccent\save@mathaccent
+%If there's more than a single symbol, use the first character instead (see below):
+    \if#32 \let\macc@nucleus\first@char \fi
+%Determine the italic correction:
+    \setbox\z@\hbox{$\macc@style{\macc@nucleus}_{}$}%
+    \setbox\tw@\hbox{$\macc@style{\macc@nucleus}{}_{}$}%
+    \dimen@\wd\tw@
+    \advance\dimen@-\wd\z@
+%Now \dimen@ is the italic correction of the symbol.
+    \divide\dimen@ 3
+    \@tempdima\wd\tw@
+    \advance\@tempdima-\scriptspace
+%Now \@tempdima is the width of the symbol.
+    \divide\@tempdima 10
+    \advance\dimen@-\@tempdima
+%Now \dimen@ = (italic correction / 3) - (Breite / 10)
+    \ifdim\dimen@>\z@ \dimen@0pt\fi
+%The bar will be shortened in the case \dimen@<0 !
+    \rel@kern{0.6}\kern-\dimen@
+    \if#31
+      \overline{\rel@kern{-0.6}\kern\dimen@\macc@nucleus\rel@kern{0.4}\kern\dimen@}%
+      \advance\dimen@0.4\dimexpr\macc@kerna
+%Place the combined final kern (-\dimen@) if it is >0 or if a superscript follows:
+      \let\final@kern#2%
+      \ifdim\dimen@<\z@ \let\final@kern1\fi
+      \if\final@kern1 \kern-\dimen@\fi
+    \else
+      \overline{\rel@kern{-0.6}\kern\dimen@#1}%
+    \fi
+  }%
+  \macc@depth\@ne
+  \let\math@bgroup\@empty \let\math@egroup\macc@set@skewchar
+  \mathsurround\z@ \frozen@everymath{\mathgroup\macc@group\relax}%
+  \macc@set@skewchar\relax
+  \let\mathaccentV\macc@nested@a
+%The following initialises \macc@kerna and calls \mathaccent:
+  \if#31
+    \macc@nested@a\relax111{#1}%
+  \else
+%If the argument consists of more than one symbol, and if the first token is
+%a letter, use that letter for the computations:
+    \def\gobble@till@marker##1\endmarker{}%
+    \futurelet\first@char\gobble@till@marker#1\endmarker
+    \ifcat\noexpand\first@char A\else
+      \def\first@char{}%
+    \fi
+    \macc@nested@a\relax111{\first@char}%
+  \fi
+  \endgroup
+}
+\makeatother
+
+%................ ................ ................ ................  ................
+%----  (D) MACROS FOR MATHEMATICS 
+% From COCV
+%................ ................ ................ ................  ................
+\def\zQuaternion{\mathbb{H}} \def\xC{\mathbb{C}} \def\xR{\mathbb{R}}
+\def\zQ{\mathbb{Q}} \def\xZ{\mathbb{Z}} \def\xN{\mathbb{N}}
+\def\zP{\mathbb{P}} \def\xA{\mathbb{A}}
+%--
+\def\zCzero{{\rm C}^{0}}
+\def\zCone{{\rm C}^{1}} 
+\def\zCtwo{{\rm C}^{2}} 
+\def\zCinfty{{\rm C}^{\infty}} 
+\def\zCn#1{{\rm C}^#1}
+%--
+\def\zHzero{{\rm H}^{0}}
+\def\zHone{{\rm H}^{1}}
+\def\zHtwo{{\rm H}^{2}} 
+\def\zHinfty{{\rm H}^{\infty}}
+\def\zHn#1{{\rm H}^#1}
+%
+\def\zWzero{{\rm W}^{0}}
+\def\zWone{{\rm W}^{1}}
+\def\zWtwo{{\rm W}^{2}} 
+\def\zWinfty{{\rm W}^{\infty}}
+\def\zWn#1{{\rm W}^#1}
+%
+\def\zLzero{{\rm L}^{0}}
+\def\zLone{{\rm L}^{1}}
+\def\zLtwo{{\rm L}^{2}} 
+\def\zLinfty{{\rm L}^{\infty}} 
+\def\zLn#1{{\rm L}^#1}
+%-- 
+\def\zDif{{\rm D}}
+\def\zdif{\,{\rm d}}
+%-- 
+\def\zdrv#1#2{\frac{{\rm d}#1}{{\rm d}#2}}%  "d#1 over d#2"
+\def\zDrv#1#2{\frac{{\rm d}}{{\rm d}#2}#1}%  "d   over d#2  #1"
+%--
+\def\zker{\mathop{\rm ker\,}\nolimits}
+\def\zcoker{\mathop{\rm coker\,}\nolimits}
+\def\zim{\mathop{\rm im\,}\nolimits}
+\def\zcoim{\mathop{\rm coim\,}\nolimits}
+\def\zdim{\mathop{\rm dim\,}\nolimits}
+\def\zcodim{\mathop{\rm codim\,}\nolimits}
+\def\ztr{\mathop{\rm tr\,}\nolimits}
+\def\zHom{\mathop{\rm Hom\,}\nolimits}
+\def\zExt{\mathop{\rm Ext\,}\nolimits}
+\def\zTor{\mathop{\rm Tor\,}\nolimits}
+%--
+\def\zGL{\mathop{\rm GL\,}\nolimits}
+\def\zSL{\mathop{\rm SL\,}\nolimits}
+\def\zPSL{\mathop{\rm PSL\,}\nolimits}
+\def\zSO{\mathop{\rm SO\,}\nolimits}
+\def\zSU{\mathop{\rm SU\,}\nolimits}
+%
+
+%Epsilon, phi, theta, etc.
+%\newcommand{\veps}{\varepsilon}
+
+\DeclareMathOperator{\acos}{acos}
+\DeclareMathOperator{\trace}{trace}
+
+\newcommand{\arc}{\gamma}
+

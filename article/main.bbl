@@ -1,0 +1,17 @@
+\begin{thebibliography}{1}
+
+\bibitem{Bock81}
+H.G. Bock.
+\newblock Numerical treatment of inverse problems in chemical reaction
+  kinetics.
+\newblock In K.H. Hebert, P.~Deuflhard, and W.~J\"ager, editors, {\em Modelling
+  of chemical reaction systems}, volume~18 of {\em Springer series in Chem.
+  Phys.}, pages 102--125, 1981.
+
+\bibitem{HaNoWa93}
+E.~Hairer, S.P.~N\o rsett, and G.~Wanner.
+\newblock {\em Solving Ordinary Differential Equations I, Nonstiff Problems},
+  volume~8 of {\em Springer Serie in Computational Mathematics}.
+\newblock Springer-Verlag, second edition, 1993.
+
+\end{thebibliography}
