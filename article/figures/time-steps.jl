@@ -15,29 +15,32 @@ include("../../src/DiffFlow.jl")
 using .DiffFlow
 #
 # Definition of the second member
-function bruss(x,par,t)
-  λ = par[1]
-  x₁ = x[1]
-  x₂ = x[2]
-  return [1+x₁^2*x₂-(λ+1)*x₁ , λ*x₁-x₁^2*x₂]
+function bruss(x, par, t)
+    λ = par[1]
+    x₁ = x[1]
+    x₂ = x[2]
+    return [1+x₁^2*x₂-(λ+1)*x₁, λ*x₁-x₁^2*x₂]
 end
 
-t0 = 0.; tf = 1.
-tspan = (t0,tf)
-λ = [3.]
+t0 = 0.0;
+tf = 1.0
+tspan = (t0, tf)
+λ = [3.0]
 p = length(λ)
 x01 = 1.3
 funx0(λ) = [x01, λ[1]]
 tol = 1.e-4
 n = 2
 
-plt1 = plot(); plt2 = plot()
+plt1 = plot();
+plt2 = plot()
 algo = Tsit5()
-reltol = 1.e-4; abstol = 1.e-4
+reltol = 1.e-4;
+abstol = 1.e-4
 
 # Flow
-ivp = ODEProblem(bruss, funx0(λ), (t0,tf), λ)
-sol_ivp = solve(ivp, alg=algo; reltol=reltol,abstol=abstol)
+ivp = ODEProblem(bruss, funx0(λ), (t0, tf), λ)
+sol_ivp = solve(ivp; alg=algo, reltol=reltol, abstol=abstol)
 println("Flow")
 println("Times for the initial flow T = ")
 println(sol_ivp.t)
@@ -48,17 +51,19 @@ dt = sol_ivp.t[2]
 println("Vatiational equation")
 # ------------------------------
 
-∂λ_flow_var = DiffFlow.build_∂λ_flow_var(bruss,t0,funx0,tf,λ)
+∂λ_flow_var = DiffFlow.build_∂λ_flow_var(bruss, t0, funx0, tf, λ)
 
 #println(∂λ_flow_var(t0,funx0,tf,λ;reltol=reltol,abstol=abstol))
-sol_var = ∂λ_flow_var((t0,tf),funx0,λ;reltol=reltol,abstol=abstol)
-sol_var = ∂λ_flow_var((t0,tf),funx0,λ;reltol=reltol,abstol=abstol,internalnorm = (u,t)->norm(u))
+sol_var = ∂λ_flow_var((t0, tf), funx0, λ; reltol=reltol, abstol=abstol)
+sol_var = ∂λ_flow_var(
+    (t0, tf), funx0, λ; reltol=reltol, abstol=abstol, internalnorm=(u, t)->norm(u)
+)
 println("Times default values= ", sol_var.t)
 dict_T[:var_reltol] = sol_var.t
-RelTol = [reltol*ones(n,1) Inf*ones(n,1)]/sqrt(p+1)
-AbsTol = [abstol*ones(n,1) Inf*ones(n,1)]/sqrt(p+1)
-sol_var = ∂λ_flow_var((t0,tf),funx0,λ;reltol=RelTol,abstol=AbsTol)
-sol_var = ∂λ_flow_var((t0,tf),funx0,λ;reltol=RelTol,abstol=AbsTol, dt=dt)#,internalnorm = (u,t)->norm(u) )
+RelTol = [reltol*ones(n, 1) Inf*ones(n, 1)]/sqrt(p+1)
+AbsTol = [abstol*ones(n, 1) Inf*ones(n, 1)]/sqrt(p+1)
+sol_var = ∂λ_flow_var((t0, tf), funx0, λ; reltol=RelTol, abstol=AbsTol)
+sol_var = ∂λ_flow_var((t0, tf), funx0, λ; reltol=RelTol, abstol=AbsTol, dt=dt)#,internalnorm = (u,t)->norm(u) )
 println("RelTol = ", RelTol)
 println("Times = ", sol_var.t)
 println(sol_ivp.t - sol_var.t)
@@ -69,11 +74,15 @@ dict_T[:var_RelTol] = sol_var.t
 
 println("Automatic differentiation")
 println("with ForwardDiff")
-∂λ_flow = DiffFlow.build_∂λ_flow(bruss,t0,funx0,tf,λ)
-sol_diff_auto_flow, T = ∂λ_flow(t0,funx0,tf,λ;reltol=RelTol,abstol=AbsTol,print_times=true)
+∂λ_flow = DiffFlow.build_∂λ_flow(bruss, t0, funx0, tf, λ)
+sol_diff_auto_flow, T = ∂λ_flow(
+    t0, funx0, tf, λ; reltol=RelTol, abstol=AbsTol, print_times=true
+)
 println("Times : ", T)
 dict_T[:diff_auto_ForwardDiff] = T
-sol_diff_auto_flow, T = ∂λ_flow(tspan,funx0,λ;reltol=RelTol,abstol=AbsTol,print_times=true)
+sol_diff_auto_flow, T = ∂λ_flow(
+    tspan, funx0, λ; reltol=RelTol, abstol=AbsTol, print_times=true
+)
 #= 
 println("internalnorm = (u,t)->norm(u)")
 println(∂λ_flow(t0,funx0,tf,λ;reltol=reltol,abstol=abstol,internalnorm = (u,t)->norm(u),print_times=true))
@@ -81,12 +90,16 @@ println(∂λ_flow(t0,funx0,tf,λ;reltol=reltol,abstol=abstol,internalnorm = (u,
 =#
 println("With Zygote")
 # with Zygote
-∂λ_flow = DiffFlow.build_∂λ_flow(bruss,t0,funx0,tf,λ; backend=AutoZygote())
-sol_diff_auto_flow_tf, T = ∂λ_flow(t0,funx0,tf,λ;reltol=reltol,abstol=abstol,print_times=true)
+∂λ_flow = DiffFlow.build_∂λ_flow(bruss, t0, funx0, tf, λ; backend=AutoZygote())
+sol_diff_auto_flow_tf, T = ∂λ_flow(
+    t0, funx0, tf, λ; reltol=reltol, abstol=abstol, print_times=true
+)
 dict_T[:diff_auto_Zygote] = T
-sol_diff_auto_flow,T = ∂λ_flow(tspan,funx0,λ;reltol=reltol,abstol=abstol,print_times=true)
+sol_diff_auto_flow, T = ∂λ_flow(
+    tspan, funx0, λ; reltol=reltol, abstol=abstol, print_times=true
+)
 
-reshape(sol_diff_auto_flow,2,7)
+reshape(sol_diff_auto_flow, 2, 7)
 
 #@btime ∂λ_flow(t0,funx0,tf,λ;reltol=reltol,abstol=abstol)
 
@@ -97,4 +110,3 @@ println("With Mooncake")
 #@btime ∂λ_flow(t0,funx0,tf,λ;reltol=reltol,abstol=abstol)
 
 #plot(plt1,plt2)
-
