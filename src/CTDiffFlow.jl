@@ -81,7 +81,9 @@ function build_∂λ_flow_var(rhs::Function,t0::Real,x0::Function,tf::Real, λ::
 
     function ∂λ_flow(tspan::Tuple{<:Real,<:Real},x0::Function, λ::Vector{<:Real}; ode_kwargs...)
         x0λ = x0(λ)
+        #=
         n = length(x0λ); p = length(λ);
+        =#
         x0δλ0 = [x0λ Jacλx0]
         ivp = ODEProblem(rhs_var, x0δλ0, tspan, λ)
         algo = get(ode_kwargs, :alg, Tsit5())
@@ -152,7 +154,7 @@ function build_∂x0_flow(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ
             return jacobian(_flow,backend,x0)
         end
      end
-    
+    ∂x0_flow
 end
 
 # derivatives with respect to λ
@@ -165,17 +167,8 @@ function build_∂λ_flow(rhs::Function,t0::Real,x0::Function,tf::Real, λ::Vect
             algo = get(ode_kwargs, :alg, Tsit5())
             sol = solve(ivp, alg=algo; ode_kwargs...)
             T = sol.t
-            nb_times = length(T)
-            n = length(x0(λ))
-            states = zeros(nb_times,n)
-            #=for i in 1:nb_times
-                 states[i,:] = sol.u[i]
-            end
-            =#
-            println("totototo")
-            println(typeof([sol[i][j] for i in 1:nb_times, j in 1:n]))
-            #println(reduce(hcat,sol.u))
-            return [sol[i][j] for i in 1:nb_times, j in 1:n]
+            
+            return reduce(hcat,sol.u)
         end
         if print_times
             return jacobian(_flow,backend,λ), T
@@ -184,22 +177,25 @@ function build_∂λ_flow(rhs::Function,t0::Real,x0::Function,tf::Real, λ::Vect
         end
      end
     
-    function ∂λ_flow(t0::Real,x0::Function, tf::Real, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
+    function ∂λ_flow(t0::Real,x0::Function, tf::Real, λ0::Vector{<:Real}; print_times=false, ode_kwargs...)
         T = []
         function _flow(λ)
             ivp = ODEProblem(rhs, x0(λ), (t0,tf), λ)
             algo = get(ode_kwargs, :alg, Tsit5())
+            println("algo = ", algo)
             sol = solve(ivp, alg=algo; ode_kwargs...)
             T = sol.t
+            println(sol.u[end])
             return sol.u[end]
         end
         if print_times
-            return jacobian(_flow,backend,λ), T
+            println("backend = ", backend)
+            return jacobian(_flow,backend,λ0), T
         else
-            return jacobian(_flow,backend,λ)
+            return jacobian(_flow,backend,λ0)
         end
      end
-  
+  return ∂λ_flow
 end
 
-end CTDiffFlow
+end # CTDiffFlow

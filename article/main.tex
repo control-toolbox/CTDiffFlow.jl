@@ -106,7 +106,7 @@ with $B(t)=\frac{\partial f}{\partial \lambda}(t,x(t;t_0,x_0,\lambda_0),\lambda_
 
 \subsection{Introduction}
 
-In all this section we test the methods on the the Brusselator example of The Hairer and al. book \cite{HaNoWa93}, page 201.
+In all this section we test the methods on the the Brusselator example of The Hairer and al. book \cite{HaNoWa93}, page 201. These results with standard options for the numerical integration.
 
 $$(IVP)\left\{\begin{array}{l}
 \dot{x}_1 = 1+x_1^2x_2-(\lambda+1)x_1\\
@@ -148,7 +148,11 @@ with $B(t)=\frac{\partial f}{\partial \lambda}(t,x(t;t_0,x_0,\lambda_0),\lambda_
    % \label{fig:homotopy_epsilon_turnpike}
 \end{figure}
 
-\begin{rmq}{Différentiation interne de Bock}
+\begin{rmq}
+In the variationnal equations we have the initial flow, so for numerically computing the solution of the variational equation, we must add the equation of the initial value problem.
+\end{rmq}
+
+\begin{rmq}
 We can also approximate $A(t)$ and $B(t)$ by finite difference. But know, as we can use automatic differentiation for computing them, we don't  test this possibility. 
 %On a 
 %$$\vec{H}(t,z(t)+\eta \delta z_j(t))=\vec{H}(t,z(t))+\frac{\partial \vec{H}}{\partial z}(t,z(t))\eta \delta z_j(t)+o(\eta \delta z_j(t))$$
@@ -167,7 +171,7 @@ We can also approximate $A(t)$ and $B(t)$ by finite difference. But know, as we 
 
 \subsection{Automatic differentiation of the flow}
 
-Here, we use automatic differentiation on the function $\vphi(\lambda) = x(t_f,t_0,x_0(\lambda),\lambda)$. This is also known as the Internal Numerical Differentiation of  Bock \cite{Bock81}
+Here, we use automatic differentiation on the function $\vphi(\lambda) = x(t_f,t_0,x_0(\lambda),\lambda)$. This is historically also known as the Internal Numerical Differentiation of  Bock \cite{Bock81}
 
 \begin{figure}[ht!]
     %\centering
@@ -177,14 +181,144 @@ Here, we use automatic differentiation on the function $\vphi(\lambda) = x(t_f,t
    % \label{fig:homotopy_epsilon_turnpike}
 \end{figure}
 
+\begin{rmq}
+Historically, automatic differentiation of the flot is known as the Interne Numerical Differentiation \cite{Bock81}.
+\end{rmq}
 \section{Tests on the time steps}
 
+\subsection{Example}
+
+Here we use the following example with $\lambda = (1,2)$
 
 
+$$(IVP)\left\{\begin{array}{l}
+\dot{x}_1 = \lambda_1x_1\\
+\dot{x}_2 = \lambda_2x_2\\
+\dot{x}_3 = (\lambda_1-\lambda_2)x_3\\
+x_1(0) = \lambda_2\\
+x_2(0) = 1\\
+x_3(0) = 1.
+\end{array}
+\right.$$
 
+So the flow is
+$$x(t,0,x_0(\lambda),\lambda) =  \begin{pmatrix}
+\exp(\lambda_1t) & 0 & 0\\
+ 0 & \exp(\lambda_2t) & 0\\
+0 & 0 &  \exp((\lambda_1-\lambda_2)t)
+\end{pmatrix}x_0(\lambda)
+=\begin{pmatrix}
+\lambda_2\exp(\lambda_1t)\\ \exp(\lambda_2t)\\ \exp((\lambda_1-\lambda_2)t)
+\end{pmatrix}.$$
 
+And the dérivatives are 
 
+$$\frac{\partial x}{\partial x_0}(t,t_0,x_0(\lambda),\lambda) = 
+ \begin{pmatrix}
+\exp(\lambda_1t) & 0 & 0\\
+ 0 & \exp(\lambda_2t) & 0\\
+0 & 0 &  \exp((\lambda_1-\lambda_2)t)
+\end{pmatrix},
+$$
+and 
 
+$$\frac{\partial x}{\partial \lambda}(t,t_0,x_0(\lambda),\lambda) = 
+ \begin{pmatrix}
+\lambda_2t\exp(\lambda_1t) & \exp(\lambda_1t)\\
+ 0 & t\exp(\lambda_2t) \\
+ t\exp((\lambda_1-\lambda_2)t) &  -t\exp((\lambda_1-\lambda_2)t)
+\end{pmatrix}.
+$$
+
+\subsection{Step grids with variationnal equations}
+
+The numerical results are listed in the table \ref{table:steps_var_equation}. 
+
+For the step size selection \cite{HaNoWa93}, the error is
+$$err = \sqrt{\frac{1}{n}\sum_{i=1}^n\left(\frac{x_{1i } - \hat{x}_{1i}}{sci}\right)^2},$$
+where $sci = abstol_i + \max(|x_{0i}|,|x_{1i}|)reltol_i$.
+So if we take the value for the $abstol_i$ and $reltol_i$ which correspond to the components of the variational equation to Inf and we replace the other value by $reltol_i/ sqrt{p+1}$ and $abstil_i/sqrt{p+1}$ (because there are $n(p+1)$ equation in the variational equation), then the step control for the initial flow and the variational equation are the same.
+
+\begin{itemize}
+\item $reltol = abstol = 1.e-4$
+\item $$RelTol = AbsTol = [reltol*ones(n,1) my\_Inf*ones(n,2)]/sqrt(p+1),$$ where 
+    \begin{itemize}
+    \item $n$ is the number of the equation for the initial value problem, 3 here, 
+    \item $p$ in the number of parameter, 2 here,
+    \item my\_Inf = prevfloat(typemax(Float64)) is the biggest float number. We take this in place of Inf because $0*Inf = NaN$.
+    \end{itemize}
+\item :ivp : initial flow;
+\item :var\_reltol : abstol=abstol	 and reltol = reltol;
+\item :var\_reltol\_internalnorm : abstol=abstol,  reltol = reltol and internalnorm $= (u,t)->norm(u)$;
+\item var\_RelTol : abstol=AbsTol	 and reltol = RelTol;
+\end{itemize}
+
+\begin{table}[ht!]
+\begin{verbatim}
+Dict{Symbol, Vector{Float64}} with 4 entries:
+  :var_RelTol              => [0.0, 0.0603328, 0.172903, 0.30947, 0.475902, 0.666691, 0.881442, 1.0]
+  :var_reltol              => [0.0, 0.0537226, 0.147041, 0.257638, 0.393494, 0.549002, 0.725585, 0.920859, 1.0]
+  :ivp                     => [0.0, 0.0603328, 0.172903, 0.30947, 0.475902, 0.666691, 0.881442, 1.0]
+  :var_reltol_internalnorm => [0.0, 0.0431253, 0.117812, 0.206115, 0.314575, 0.438265, 0.578163, 0.731963, 0.899086, 1.0]
+\end{verbatim}
+\caption{\label{table:steps_var_equation}\it Results with variationnal equations.}
+\end{table}
+
+\subsection{Step grids with automatic differentiation of the flow}
+The numerical results are listed in the table \ref{table:steps_auto_diff}. 
+\begin{itemize}
+\item :ivp : initial flow;
+\item :diff\_auto\_Zygote : automatic differentiation with Zygote;
+\item :diff\_auto\_ForwardDiff : automatic differentiation with ForwardDiff;
+\item :diff\_auto\_ForwardDiff\_internalnorm :  automatic differentiation with ForwardDiff and internalnorm $= (u,t)->norm(u)$.
+\end{itemize}
+
+\begin{table}[ht!]
+\begin{verbatim}
+Dict{Symbol, Vector{Float64}} with 4 entries:
+  :diff_auto_Zygote                   => [0.0, 0.0603328, 0.172903, 0.30947, 0.475902, 0.666691, 0.881442, 1.0]
+  :diff_auto_ForwardDiff_internalnorm => [0.0, 0.0540557, 0.154756, 0.276759, 0.425512, 0.59589, 0.787551, 0.997154, 1.0]
+  :diff_auto_ForwardDiff              => [0.0, 0.0611775, 0.167513, 0.293407, 0.447446, 0.622839, 0.820502, 1.0]
+  :ivp                                => [0.0, 0.0603328, 0.172903, 0.30947, 0.475902, 0.666691, 0.881442, 1.0]
+\end{verbatim}
+\caption{\label{table:steps_auto_diff}it Results with automatic differentiation.}
+\end{table}
+
+\subsection{Comparaison of the solutions for the methods with the same step grid}
+
+The solution at $tf$ of the jacobian are
+\begin{itemize}
+\item exact solution
+\begin{verbatim}
+ 5.43656   2.71828
+ 0.0       7.38906
+ 0.367879  0.367879
+\end{verbatim}
+\item with the variational equation
+\begin{verbatim}
+ 5.43656    2.71828
+ 0.0        7.38905
+ 0.367879  -0.367879
+\end{verbatim}
+\item with the automatic differentiation with \texttt{ForwardDiff}
+\begin{verbatim}
+ 5.43656    2.71828
+ 0.0        7.38905
+ 0.367879  -0.367879
+\end{verbatim}
+\item with the automatic differentiation with \texttt{Zygote}
+\begin{verbatim}
+ 5.43656   2.71828
+ 5.43656  10.1073
+ 5.80444   9.73945
+\end{verbatim}
+\end{itemize}
+ 
+\subsection{conclusion}
+\begin{itemize}
+\item The use of the option internalnorm as mentioned by Chris don't give the good results for the steps grid !
+\item The use of Zygote with the numerical integration is not good !
+\end{itemize}
 
 
 
