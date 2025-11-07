@@ -182,14 +182,11 @@ function build_∂λ_flow(rhs::Function,t0::Real,x0::Function,tf::Real, λ::Vect
         function _flow(λ)
             ivp = ODEProblem(rhs, x0(λ), (t0,tf), λ)
             algo = get(ode_kwargs, :alg, Tsit5())
-            println("algo = ", algo)
             sol = solve(ivp, alg=algo; ode_kwargs...)
             T = sol.t
-            println(sol.u[end])
             return sol.u[end]
         end
         if print_times
-            println("backend = ", backend)
             return jacobian(_flow,backend,λ0), T
         else
             return jacobian(_flow,backend,λ0)

@@ -63,7 +63,7 @@ n = length(funx0(λ))
 sol_∂xO_flow = diagm([exp(tf*λ[1]),exp(tf*λ[2]),exp(tf*(λ[1]-λ[2]))])
 sol_∂λ_flow = [λ[2]*exp(λ[1]*tf) exp(λ[1]*tf)
                     0.           tf*exp(λ[2]*tf)
-             tf*exp((λ[1]-λ[2])*tf)  tf*exp((λ[1]-λ[2])*tf)]
+             tf*exp((λ[1]-λ[2])*tf)  -tf*exp((λ[1]-λ[2])*tf)]
 algo = Tsit5()
 reltol = 1.e-4; abstol = 1.e-4
 
@@ -95,7 +95,7 @@ sol1 = my_∂λ_flow((t0,tf),xX0,λ;reltol=RelTol,abstol=AbsTol, dt=dt)
 
 sol_var = ∂λ_flow_var((t0,tf),funx0,λ;reltol=reltol,abstol=abstol)
 dict_T_var[:var_reltol] = sol_var.t
-sol_var = ∂λ_flow_var((t0,tf),funx0,λ;reltol=reltol,abstol=abstol,internalnorm = (u,t)->norm(u))
+sol_var = ∂λ_flow_var((t0,tf),funx0,λ;reltol=reltol,abstol=abstol,internalnorm = (u,t)->norm(u[:,1:1]))
 dict_T_var[:var_reltol_internalnorm] = sol_var.t
 
 my_Inf = prevfloat(typemax(Float64))
@@ -141,9 +141,8 @@ println("t0= ", t0)
 println("tf= ", tf)
 println("λ = ", λ)
 N = 5
-sol_diff_auto_flow_tf, T = ∂λ_flow(t0,funx0,tf,λ;reltol=reltol,abstol=abstol, alg = Euler(),adaptive=false, dt = (tf-t0)/N,print_times=true)
+sol_diff_auto_flow_tf, T = ∂λ_flow(t0,funx0,tf,λ;reltol=reltol,abstol=abstol, print_times=true) #, alg = Euler(),adaptive=false, dt = (tf-t0)/N,print_times=true)
 dict_T_auto_diff[:diff_auto_Zygote] = T
-xX_auto_diff_Zygote = sol_diff_auto_flow_tf
 
 [sol_∂λ_flow sol_diff_auto_flow sol_diff_auto_flow_tf]
 #sort(dict_T; rev = true)
