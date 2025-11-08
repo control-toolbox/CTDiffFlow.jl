@@ -32,25 +32,30 @@ function hinit(F, x0, t0, tend, p, reltol, abstol)
     return tdir*min(100*h0, h1, tdir*(tend-t0)), tdir, f0
 end
 
+A(λ) = [λ[1] 0 0; 0 λ[2] 0; 0 0 λ[1]-λ[2]]
+fun1(t, x) = A(λ)*x
 
-A(λ) = [λ[1] 0 0 ; 0 λ[2] 0 ; 0 0 λ[1]-λ[2]]
-fun1(t,x) = A(λ)*x
+function fun2(t, xX)
+    [fun1(xX[:, 1], λ, t) fun1(
+        xX[:, 2:end], λ, t
+    )+[xX[1, 1] 0; 0 xX[2, 1]; xX[3, 1] xX[3, 1]]]
+end
 
-fun2(t,xX) = [fun1(xX[:,1],λ,t) fun1(xX[:,2:end],λ,t)+[xX[1,1] 0 ; 0 xX[2,1] ; xX[3,1] xX[3,1]] ]
-   
-t0 = 0. ; tend = 2.;
+t0 = 0.0;
+tend = 2.0;
 p = 2
-x0 = [0.,1.,1]
-reltol = 1.e-4; abstol = 1.e-4
+x0 = [0.0, 1.0, 1]
+reltol = 1.e-4;
+abstol = 1.e-4
 
 hinit(fun1, x0, t0, tend, p, reltol, abstol)
 
-xX0 = [funx0(λ) [0 1 ; 0 0 ; 0 0]]
+xX0 = [funx0(λ) [0 1; 0 0; 0 0]]
 hinit(fun2, xX0, t0, tend, p, reltol, abstol)
-RelTol = reltol*ones(n,p+1) 
+RelTol = reltol*ones(n, p+1)
 AbsTol = RelTol
 
 hinit(fun2, xX0, t0, tend, p, RelTol, AbsTol)
 
-RelTol = [reltol*ones(n,1) Inf*ones(n,p)]/sqrt(p+1)
-AbsTol = [abstol*ones(n,1) Inf*ones(n,p)]/sqrt(p+1)
+RelTol = [reltol*ones(n, 1) Inf*ones(n, p)]/sqrt(p+1)
+AbsTol = [abstol*ones(n, 1) Inf*ones(n, p)]/sqrt(p+1)
