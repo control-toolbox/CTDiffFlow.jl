@@ -59,7 +59,7 @@ and
 ## END
 
 <figure>
-<img width="800" alt="affiliations" src="./assets/plot_END.png"/>
+<img width="800" alt="affiliations" src="./assets/plot_END.png">
 <figcaption> Derivative computing by finite differences. $t_f=20, \lambda$ ranging from 2.88 to 3.08, $Tol=RelTol=AbsTol=10^{-4}$. Top graphs is for  $\delta\lambda=4Tol$ and bottom graphs for $\delta\lambda=\sqrt{Tol}$. The numerical integrattion is done with Tsit5().
 </figcaption>
 </figure>
