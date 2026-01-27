@@ -1,6 +1,6 @@
 using Pkg
-Pkg.activate("..")
-Pkg.add("DualNumbers")
+Pkg.activate(".")
+#Pkg.add("DualNumbers")
 using DualNumbers
 using Markdown
 using LinearAlgebra
@@ -10,8 +10,8 @@ using ForwardDiff: ForwardDiff
 using Zygote: Zygote
 using OrdinaryDiffEq
 
-include("../src/DiffFlow.jl")
-using .DiffFlow
+include("../src/CTDiffFlow.jl")
+using .CTDiffFlow
 
 function rhs_bruss(x, par, t)
     λ = par[1]
@@ -59,7 +59,7 @@ tol_error = 1.e-5
 
 # Tests of the second member of the variational equations
 # with respect to the initial condition
-rhs_bruss_var_x = DiffFlow.built_rhs_var(rhs_bruss)
+rhs_bruss_var_x = CTDiffFlow.built_rhs_var(rhs_bruss)
 t = 0.0
 Λ = [3.0]
 x0 = [1.3; Λ[1]]
@@ -69,7 +69,7 @@ xX = [x0 [1; 0]]
 @test isapprox(my_rhs_bruss_var_x(xX, Λ, t), rhs_bruss_var_x(xX, Λ, t), atol=tol_error)
 
 # with respect to λ
-rhs_bruss_var_λ = DiffFlow.built_rhs_var(rhs_bruss; wrt=:λ)
+rhs_bruss_var_λ = CTDiffFlow.built_rhs_var(rhs_bruss; wrt=:λ)
 t = 0.0
 Λ = [3.0]
 x0 = [1.3; Λ[1]]
@@ -108,22 +108,20 @@ end
 t0 = 0.0;
 tf = 2.0;
 x0 = [λ[2], 1.0, 1];
-sol_∂xO_flow = diagm([exp(tf*λ[1]), exp(tf*λ[2]), exp(tf*(λ[1]-λ[2]))])
+sol_∂xO_flow = exp((tf-t0)*A(λ))
+# sol_∂xO_flow = diagm([exp(tf*λ[1]), exp(tf*λ[2]), exp(tf*(λ[1]-λ[2]))])
 
-∂x0_flow_var = DiffFlow.build_∂x0_flow_var(fun1, t0, x0, tf, λ)
-@test isapprox(
-    sol_∂xO_flow, ∂x0_flow_var(t0, x0, tf, λ; reltol=reltol, abstol=abstol), atol=tol_error
-)
+∂x0_flow_var = CTDiffFlow.build_∂x0_flow_var(fun1, t0, x0, tf, λ)
+println(@test isapprox(sol_∂xO_flow, ∂x0_flow_var(t0, x0, tf, λ; reltol=reltol, abstol=abstol), atol=tol_error))
 
 println(my_∂x0_flow(t0, x0, tf, λ))
 println(my_∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol))
 
 println(my_∂x0_flow(t0, x0, tf, λ) - ∂x0_flow_var(t0, x0, tf, λ))
-@test isapprox(
+println(@test isapprox(
     my_∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol),
     ∂x0_flow_var(t0, x0, tf, λ; reltol=reltol, abstol=abstol),
-    atol=tol_error,
-)
+    atol=tol_error))
 
 # Derivative with respect to λ
 sol_∂λ_flow = [
@@ -133,17 +131,15 @@ sol_∂λ_flow = [
 ]
 
 funx0(λ) = [λ[2], 1.0, 1]
-∂λ_flow_var = DiffFlow.build_∂λ_flow_var(fun1, t0, funx0, tf, λ)
+∂λ_flow_var = CTDiffFlow.build_∂λ_flow_var(fun1, t0, funx0, tf, λ)
 λ0 = zeros(3, 2);
 λ0[1, 2] = 1.0
-@test isapprox(
-    sol_∂λ_flow, ∂λ_flow_var(t0, funx0, tf, λ; reltol=reltol, abstol=abstol), atol=tol_error
-)
+println(@test isapprox(
+    sol_∂λ_flow, ∂λ_flow_var(t0, funx0, tf, λ; reltol=reltol, abstol=abstol), atol=tol_error))
 
 # Diff auto
 # Derivative with respect to x0
-∂x0_flow = DiffFlow.build_∂x0_flow(fun1, t0, x0, tf, λ)
-println(δx0)
+∂x0_flow = CTDiffFlow.build_∂x0_flow(fun1, t0, x0, tf, λ)
 println("ccc", sol_∂xO_flow-∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol))
 println(
     "ddd",
@@ -164,7 +160,7 @@ println(
 
 # Derivative with respect to λ
 
-∂λ_flow = DiffFlow.build_∂λ_flow(fun1, t0, funx0, tf, λ)
+∂λ_flow = CTDiffFlow.build_∂λ_flow(fun1, t0, funx0, tf, λ)
 println("comparaison diff auto et var")
 println("----------------------------")
 println(funx0(λ))

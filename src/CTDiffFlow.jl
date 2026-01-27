@@ -105,6 +105,7 @@ end
 function build_∂x0_flow(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; backend = AutoForwardDiff())
 
     #=
+    # apply to a vector δx0
     function ∂x0_flow(tspan::Tuple{<:Real,<:Real},x0::Vector{<:Real}, δx0::Vector{<:Real}, λ::Vector{<:Real}; ode_kwargs...)
         function flow(x0)
             ivp = ODEProblem(rhs, x0, tspan, λ)
@@ -126,7 +127,7 @@ function build_∂x0_flow(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ
     end
     =#
 
-    
+    # Jacobian matrix
     function ∂x0_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
         function _flow(x0)
             ivp = ODEProblem(rhs, x0, (t0,tf), λ)
@@ -141,20 +142,7 @@ function build_∂x0_flow(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ
         end
      end
     
-     function ∂x0_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
-        function _flow(x0)
-            ivp = ODEProblem(rhs, x0, (t0,tf), λ)
-            algo = get(ode_kwargs, :alg, Tsit5())
-            sol = solve(ivp, alg=algo; ode_kwargs...)
-            return sol.u[end]
-        end
-        if print_times
-            return jacobian(_flow,backend,x0), sol.t
-        else
-            return jacobian(_flow,backend,x0)
-        end
-     end
-    ∂x0_flow
+    return ∂x0_flow
 end
 
 # derivatives with respect to λ

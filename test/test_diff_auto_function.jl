@@ -1,8 +1,8 @@
 using Pkg
 Pkg.activate(".")
 #Pkg.add("BenchmarkTools")
-Pkg.add("Enzyme")
-Pkg.add("Mooncake")
+#Pkg.add("Enzyme")
+#Pkg.add("Mooncake")
 #println(pwd())
 #println(Pkg.status())
 using Markdown
@@ -14,7 +14,7 @@ using Enzyme: Enzyme
 using Mooncake: Mooncake
 using Zygote: Zygote
 
-
+function main()
 A = [0. 1 2 ; 3 4 5]
 function fun1(x::Vector{<:Real})::Vector{<:Real}
     return A*x
@@ -34,16 +34,14 @@ Jac_fun3 = [A zeros(size(A)) ; zeros(size(A)) A]
 
 tol_error = 2*eps()
 
-
-
 # Vectors
 println("Vectors")
 println("-------")
 # Problems with Enzyme
-#Backend = (AutoEnzyme(), AutoForwardDiff(), AutoMooncake(), AutoZygote())
-Backend = (AutoForwardDiff(), AutoMooncake(), AutoZygote())
+#Backends = (AutoEnzyme(), AutoForwardDiff(), AutoMooncake(), AutoZygote())
+Backends = (AutoForwardDiff(), AutoMooncake(), AutoZygote())
     println("type_x = Vector")
-    for backend in Backend
+    for backend in Backends
        println("backend = ", backend)
        x = [1.,2,3]
        Jac = jacobian(fun1, backend, x)
@@ -56,8 +54,8 @@ Backend = (AutoForwardDiff(), AutoMooncake(), AutoZygote())
 println("Matrix")
 println("------")
 # Problem with Mooncake
-Backend = (AutoForwardDiff(), AutoZygote())
-for backend in Backend
+Backends = (AutoForwardDiff(), AutoZygote())
+for backend in Backends
     println("backend = ", backend)
     x = [1 2 ; 3 4 ; 5 6]
     Jac = jacobian(fun3, backend, x)
@@ -81,4 +79,5 @@ Jac_fun1  # has been mutated
 
 =#
 
-
+end
+main()

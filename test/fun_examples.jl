@@ -25,12 +25,16 @@ end
 # (∂x(t,t0,x_0(λ),λ)/∂x0) = diag(exp(λ₁t),exp(λ₂t),exp((λ₁-λ₂)t))
 # ∂x(t,t0,x_0(λ),λ)/∂λ = [λ₂texp(λ₁t) exp(λ₁t) ; 0 texp(λ₂t) ; texp((λ₁-λ₂)t)) -texp((λ₁-λ₂)t))]
 # 
+t0 = 0.
 A(λ) = [λ[1] 0 0 ; 0 λ[2] 0 ; 0 0 λ[1]-λ[2]]
 fun_lin(x,λ,t) = A(λ)*x
 # Initial condition
 fun_lin_x0(λ) = [λ[2],1.,1]; 
 # Derivatives of the flow
-sol_∂xO_flow(tf,λ) = diagm([exp(tf*λ[1]),exp(tf*λ[2]),exp(tf*(λ[1]-λ[2]))])
+sol_∂xO_flow(tf,λ) = sol_∂xO_flow = exp((tf-t0)*A(λ))
+
+tf = 2.
+
 sol_∂λ_flow(tf,λ) = [λ[2]*exp(λ[1]*tf) exp(λ[1]*tf)
                     0.           tf*exp(λ[2]*tf)
              tf*exp((λ[1]-λ[2])*tf)  -tf*exp((λ[1]-λ[2])*tf)]
