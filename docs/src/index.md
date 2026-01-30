@@ -8,8 +8,7 @@ Documentation for [CTDiffFlow](https://github.com/control-toolbox/CTDiffFlow.jl)
 
 This GitHub repository tests the different possibility in Julia for computing the derivative of a flow.
 
-We numerical resluts are obtained on the following example $\lambda = (1,2)$
-
+We numerical results are obtained on the following example $\lambda = (1,2)$
 
 ```math
 (IVP)\left\{\begin{array}{l}
@@ -38,6 +37,7 @@ x(t,0,x_0(\lambda),\lambda) =  \begin{pmatrix}
 
 And the dérivatives are 
 
+
 ```math
 \frac{\partial x}{\partial x_0}(t,t_0,x_0(\lambda),\lambda) = 
  \begin{pmatrix}
@@ -58,11 +58,13 @@ and
 ```
 ## END
 
+```@raw html
 <figure>
-<img width="800" alt="affiliations" src="./assets/plot_END.png">
+<img width="800" alt="affiliations" src="./assets/plot_END.png"/>
 <figcaption> Derivative computing by finite differences. $t_f=20, \lambda$ ranging from 2.88 to 3.08, $Tol=RelTol=AbsTol=10^{-4}$. Top graphs is for  $\delta\lambda=4Tol$ and bottom graphs for $\delta\lambda=\sqrt{Tol}$. The numerical integrattion is done with Tsit5().
 </figcaption>
 </figure>
+```
 
 
 ## Reproducibility
@@ -123,3 +125,6 @@ Pkg.status(; mode = PKGMODE_MANIFEST) # hide
 ```@raw html
 </details>
 ```
+
+
+

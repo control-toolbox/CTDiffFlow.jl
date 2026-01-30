@@ -129,14 +129,19 @@ function build_∂x0_flow(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ
 
     # Jacobian matrix
     function ∂x0_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
+        T = []
         function _flow(x0)
             ivp = ODEProblem(rhs, x0, (t0,tf), λ)
             algo = get(ode_kwargs, :alg, Tsit5())
             sol = solve(ivp, alg=algo; ode_kwargs...)
+            T = sol.t
+            if print_times
+                println("T = ", sol.t)
+            end
             return sol.u[end]
         end
         if print_times
-            return jacobian(_flow,backend,x0), sol.t
+            return jacobian(_flow,backend,x0), T
         else
             return jacobian(_flow,backend,x0)
         end

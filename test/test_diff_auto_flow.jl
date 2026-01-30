@@ -1,6 +1,6 @@
 using Pkg
 Pkg.activate(".")
-Pkg.add("SciMLSensitivity")
+#Pkg.add("SciMLSensitivity")
 #Pkg.add("BenchmarkTools")
 #Pkg.add("Enzyme")
 #Pkg.add("Mooncake")
@@ -17,7 +17,7 @@ using Mooncake: Mooncake
 using Zygote: Zygote
 
 using OrdinaryDiffEq
-using SciMLSensitivity
+#using SciMLSensitivity
 
 include("./fun_examples.jl")
 include("../src/CTDiffFlow.jl")
@@ -33,9 +33,19 @@ println("--------------------------")
 #Backend = (AutoEnzyme(), AutoForwardDiff(), AutoMooncake(), AutoZygote())
 Backends = (AutoForwardDiff(), AutoMooncake(), AutoZygote())
 #Backends = (AutoForwardDiff(),)
-reltol = 1.e-8;
-abstol = 1.e-12
+reltol = 1.e-2;
+abstol = 1.e-4
 tol_error = 10*max(reltol,abstol)
+λ = [1.0, 2]
+t0 = 0.0;
+tf = 1.0;
+x0 = [λ[2], 1.0, 1]; 
+ivp = ODEProblem(fun_lin, x0, (t0,tf), λ)
+algo = Tsit5()
+sol = solve(ivp, alg=algo; reltol = reltol, abstol = abstol)
+println("Times for the initial flow = ", sol.t)
+
+
 println("Linear system, with respect to the initial condition")
     for backend in Backends
        println("backend = ", backend)
@@ -44,10 +54,10 @@ println("Linear system, with respect to the initial condition")
       # Derivative with respect to x0
       λ = [1.0, 2]
       t0 = 0.0;
-      tf = 2.0;
+      tf = 1.0;
       x0 = [λ[2], 1.0, 1]; 
       ∂x0_flow = CTDiffFlow.build_∂x0_flow(fun_lin, t0, x0, tf, λ; backend = backend)
-      println("∂x0_flow = ", ∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol))
+      println("∂x0_flow = ", ∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol, print_times=true))
       println("sol_∂xO_flow(tf,λ) = ", sol_∂xO_flow(tf,λ))
       println("ccc", sol_∂xO_flow(tf,λ)-∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol))
       
