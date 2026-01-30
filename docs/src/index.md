@@ -91,40 +91,23 @@ _downloads_toml(".") # hide
 ```
 
 ```@raw html
-<details style="margin-bottom: 0.5em; margin-top: 1em;"><summary>ℹ️ Version info</summary>
+<br>
 ```
 
-```@example main
-versioninfo() # hide
-```
+!!! details "ℹ️ Version info"
 
-```@raw html
-</details>
-```
+    ```@example main
+    versioninfo() # hide
+    ```
 
-```@raw html
-<details style="margin-bottom: 0.5em;"><summary>📦 Package status</summary>
-```
+!!! details "📦 Package status"
 
-```@example main
-Pkg.status() # hide
-```
+    ```@example main
+    Pkg.status() # hide
+    ```
 
-```@raw html
-</details>
-```
+!!! details "📚 Complete manifest"
 
-```@raw html
-<details style="margin-bottom: 0.5em;"><summary>📚 Complete manifest</summary>
-```
-
-```@example main
-Pkg.status(; mode = PKGMODE_MANIFEST) # hide
-```
-
-```@raw html
-</details>
-```
-
-
-
+    ```@example main
+    Pkg.status(; mode = PKGMODE_MANIFEST) # hide
+    ```
