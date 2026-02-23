@@ -4,15 +4,54 @@ using DifferentiationInterface
 using OrdinaryDiffEq
 using LinearAlgebra
 
+
+# Derivative with respect to x0
+function build_∂x0_flow(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; var_ind = :var, backend = AutoForwardDiff()) #,print_step=false)
+    """
+        Return the function which compute the derivative of the flow
+        
+        input
+        -----
+        rhs : right hand side which defines the flow
+              xpoint = rhs(x,λ,t)
+        t0 : the initial time
+             Real
+        x0 : initial state
+             Vector(Real)
+        tf : final time
+             Real
+        λ : parameter
+            Vector of Real
+        var_ind : Integrate the variational equations or Internal Numerical Equation (Automatic differentiation on the flow)
+              var_ind = :var -> Variational equations
+              vat_ind = :ind -> IND
+        backend : backend of the DifferentiationInterface.jl
+
+        output
+        ------
+        the function ∂x0_flow the derivative with respect to ine initial condition of the flow 
+        at the final time tf or on the interval (t0,tf)
+        ∂x0_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
+        or
+        ∂x0_flow(tspan::Tuple{<:Real,<:Real},x0::Vector{<:Real}, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
+    """
+    @assert (var_ind == :var || var_ind == :ind) "Error the var_ind optional argument of the build_∂x0_flow function is not equal to :var or :ind"
+    if var_ind == :var
+        build_∂x0_flow_var(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; backend = backend)
+    elseif var_ind == :ind
+        build_∂x0_flow_ind(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; backend = backend)
+    end
+end
+
 function built_rhs_var(rhs::Function; wrt = :x0, backend = AutoForwardDiff() )
     """
         Built the second member of the variational equations
         input
         -----
         rhs : right hand side
-            xpoint = rhs(x,λ,t)
+              xpoint = rhs(x,λ,t)
         wrt : with respect to
-              wrt = :x0 -> with respevt to the intial condition
+              wrt = :x0 -> with respect to the intial condition
               wrt = :λ -> with respect to the parameter λ
               wrt = :t0 -> with respect to the initial time
         backend : backend of the DifferentiationInterface.jl
@@ -20,7 +59,7 @@ function built_rhs_var(rhs::Function; wrt = :x0, backend = AutoForwardDiff() )
         output
         ------
         the fucntion rhs_var(xX,λ,t)
-            xX is a matrix (n,n+1) 
+            xX is a matrix (n,n+1) for wrt=:x0, (n,p) for wrt=:λ, (n,1) for wrt=:t0
             The fisrt column is the initial state variable x
             The 2:end column is the state X of the variational equations
     """
@@ -49,12 +88,12 @@ function built_rhs_var(rhs::Function; wrt = :x0, backend = AutoForwardDiff() )
     end
 end
 
-
 # Integration of the variational equations
 # derivatives with respect to x0
 function build_∂x0_flow_var(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; backend = AutoForwardDiff()) #,print_step=false)
 
     rhs_var = built_rhs_var(rhs , wrt = :x0, backend = backend)
+
 
     function ∂x0_flow(tspan::Tuple{<:Real,<:Real},x0::Vector{<:Real}, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
         n = length(x0)
@@ -65,35 +104,31 @@ function build_∂x0_flow_var(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
         return sol
     end
 
-    function ∂x0_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; ode_kwargs...)
-        #println("reltol = ", get(ode_kwargs, :reltol, 1.e-3))
-        #println("abstol = ", get(ode_kwargs, :abstol, 1.e-6))
+    function ∂x0_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
         sol = ∂x0_flow((t0,tf),x0,λ; ode_kwargs...)
-        return sol.u[end][:,2:end]
+        if print_times
+            return sol.u[end][:,2:end], sol.t
+        else
+            return sol.u[end][:,2:end]
+        end
      end
     return ∂x0_flow
 end
 
 # derivatives with respect to λ
-function build_∂λ_flow_var(rhs::Function,t0::Real,x0::Function,tf::Real, λ::Vector{<:Real}; backend = AutoForwardDiff()) #,print_step=false)
-    Jacλx0 = jacobian(x0,backend,λ)
+function build_∂λ_flow_var(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; backend = AutoForwardDiff()) #,print_step=false)
     rhs_var = built_rhs_var(rhs , wrt = :λ, backend = backend)
 
-    function ∂λ_flow(tspan::Tuple{<:Real,<:Real},x0::Function, λ::Vector{<:Real}; ode_kwargs...)
-        x0λ = x0(λ)
-        #=
-        n = length(x0λ); p = length(λ);
-        =#
-        x0δλ0 = [x0λ Jacλx0]
+    function ∂λ_flow(tspan::Tuple{<:Real,<:Real},x0::Vector{<:Real}, λ::Vector{<:Real}; ode_kwargs...)
+        n = length(x0); p = length(λ)
+        x0δλ0 = [x0 zeros(n,p)]
         ivp = ODEProblem(rhs_var, x0δλ0, tspan, λ)
         algo = get(ode_kwargs, :alg, Tsit5())
         sol = solve(ivp, alg=algo; ode_kwargs...)
         return sol
     end
 
-    function ∂λ_flow(t0::Real,x0::Function, tf::Real, λ::Vector{<:Real}; ode_kwargs...)
-        #println("reltol = ", get(ode_kwargs, :reltol, 1.e-3))
-        #println("abstol = ", get(ode_kwargs, :abstol, 1.e-6))
+    function ∂λ_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; ode_kwargs...)
         sol = ∂λ_flow((t0,tf),x0,λ; ode_kwargs...)
         return sol.u[end][:,2:end]
      end
@@ -102,30 +137,7 @@ end
 
 # Automatic differentiation on the flow
 # derivatives with respect to x0
-function build_∂x0_flow(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; backend = AutoForwardDiff())
-
-    #=
-    # apply to a vector δx0
-    function ∂x0_flow(tspan::Tuple{<:Real,<:Real},x0::Vector{<:Real}, δx0::Vector{<:Real}, λ::Vector{<:Real}; ode_kwargs...)
-        function flow(x0)
-            ivp = ODEProblem(rhs, x0, tspan, λ)
-            sol = solve(ivp, alg=algo; ode_kwargs...)
-            return sol.u
-        end
-        println("coucou")
-        return jacobian(flow,backend,x0)
-    end
-    =#
-#=
-       function ∂x0_flow(tspan::Tuple{<:Real,<:Real},x0::Vector{<:Real}, δx0::Matrix{<:Real}, λ::Vector{<:Real}; ode_kwargs...)
-        function flow(x0)
-            ivp = ODEProblem(rhs, x0, tspan, λ)
-            sol = solve(ivp, alg=algo; ode_kwargs...)
-            return sol.u[end]
-        end
-        return jacobian(flow,backend,x0)*δx0
-    end
-    =#
+function build_∂x0_flow_ind(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; backend = AutoForwardDiff())
 
     # Jacobian matrix
     function ∂x0_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
@@ -135,9 +147,6 @@ function build_∂x0_flow(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ
             algo = get(ode_kwargs, :alg, Tsit5())
             sol = solve(ivp, alg=algo; ode_kwargs...)
             T = sol.t
-            if print_times
-                println("T = ", sol.t)
-            end
             return sol.u[end]
         end
         if print_times
@@ -151,12 +160,12 @@ function build_∂x0_flow(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ
 end
 
 # derivatives with respect to λ
-function build_∂λ_flow(rhs::Function,t0::Real,x0::Function,tf::Real, λ::Vector{<:Real}; backend = AutoForwardDiff())
+function build_∂λ_flow_ind(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; backend = AutoForwardDiff())
     
-    function ∂λ_flow(tspan::Tuple{<:Real,<:Real},x0::Function, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
+    function ∂λ_flow(tspan::Tuple{<:Real,<:Real},x0::Vector{<:Real}, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
         T = []
         function _flow(λ)
-            ivp = ODEProblem(rhs, x0(λ), tspan, λ)
+            ivp = ODEProblem(rhs, x0, tspan, λ)
             algo = get(ode_kwargs, :alg, Tsit5())
             sol = solve(ivp, alg=algo; ode_kwargs...)
             T = sol.t
@@ -170,10 +179,10 @@ function build_∂λ_flow(rhs::Function,t0::Real,x0::Function,tf::Real, λ::Vect
         end
      end
      
-    function ∂λ_flow(t0::Real,x0::Function, tf::Real, λ0::Vector{<:Real}; print_times=false, ode_kwargs...)
+    function ∂λ_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ0::Vector{<:Real}; print_times=false, ode_kwargs...)
         T = []
         function _flow(λ)
-            ivp = ODEProblem(rhs, x0(λ), (t0,tf), λ)
+            ivp = ODEProblem(rhs, x0, (t0,tf), λ)
             algo = get(ode_kwargs, :alg, Tsit5())
             sol = solve(ivp, alg=algo; ode_kwargs...)
             T = sol.t

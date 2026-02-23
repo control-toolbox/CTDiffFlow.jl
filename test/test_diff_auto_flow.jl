@@ -1,65 +1,120 @@
 using Pkg
 Pkg.activate(".")
+#Pkg.add("ReverseDiff")
+#Pkg.add("DataFrames")
 #Pkg.add("SciMLSensitivity")
 #Pkg.add("BenchmarkTools")
 #Pkg.add("Enzyme")
 #Pkg.add("Mooncake")
 #println(pwd())
 #println(Pkg.status())
+using DataFrames
 using Markdown
 using LinearAlgebra
 using Test
 using DifferentiationInterface
 
 using ForwardDiff: ForwardDiff
-using Enzyme: Enzyme
+#using Enzyme: Enzyme
 using Mooncake: Mooncake
-using Zygote: Zygote
+#using Zygote: Zygote
+#using ReverseDiff: ReverseDiff
 
 using OrdinaryDiffEq
-#using SciMLSensitivity
+using SciMLSensitivity
 
-include("./fun_examples.jl")
+#include("./fun_examples.jl")
 include("../src/CTDiffFlow.jl")
 using .CTDiffFlow
 
+function main(adaptive)
+    tol_error = 2*eps()
+    # Backends
+    # Problems with Enzyme and Zygote
+    #Backend = (AutoEnzyme(), AutoForwardDiff(), AutoMooncake(), AutoZygote())
+    Backends = (AutoForwardDiff(), AutoMooncake())
+    reltol = 1.e-9;
+    abstol = 1.e-12
+    tol_error = 10*max(reltol,abstol)
+    #
+    # Initial value problem
+    λ = [1.0, 2]
+    A(λ) = [λ[1] 0 ; 0 λ[2]]
+    fun_lin1(x,λ,t) = A(λ)*x
+    t0 = 0.0; tf = 1.0;
+    x0 = [1., 2.]
+    # jacobien of the tlow
+    sol_∂xO_flow(tf,λ) = exp(tf*A(λ))
 
-tol_error = 2*eps()
+    λ = [1.0, 2]
+    B(λ) = [λ[1] 0 0 ; 0 λ[2] 0 ; 0 0 λ[1]-λ[2]]
+    fun_lin2(x,λ,t) = B(λ)*x
+    x0 = [1., 2., 3]
+    # jacobien of the tlow
+    sol_∂xO_flow2(tf,λ) = exp(tf*B(λ))
 
-# Vectors
-println("Automatic differentiation")
-println("--------------------------")
-# Problems with Enzyme
-#Backend = (AutoEnzyme(), AutoForwardDiff(), AutoMooncake(), AutoZygote())
-Backends = (AutoForwardDiff(), AutoMooncake(), AutoZygote())
-#Backends = (AutoForwardDiff(),)
-reltol = 1.e-2;
-abstol = 1.e-4
-tol_error = 10*max(reltol,abstol)
-λ = [1.0, 2]
-t0 = 0.0;
-tf = 1.0;
-x0 = [λ[2], 1.0, 1]; 
-ivp = ODEProblem(fun_lin, x0, (t0,tf), λ)
-algo = Tsit5()
-sol = solve(ivp, alg=algo; reltol = reltol, abstol = abstol)
-println("Times for the initial flow = ", sol.t)
+    df_sol = DataFrame(VAR_IND=String[], backend=String[], norm_∞_error=Real[], norm_∞_diff=Real[], time_steps=Vector[], length_times=Real[])
+    Sol = []
+    # Integration of the IVP
+    ivp = ODEProblem(fun_lin2, x0, (t0,tf), λ)
+    sol = solve(ivp, alg=Tsit5(), reltol = reltol, abstol = abstol)
+    push!(df_sol, ["IVP", "", NaN, NaN, sol.t[2:3], length(sol.t)])
+    
+    #algo = RK4()
+    algo = Tsit5()
+    N = 10
+    dt = (tf-t0)/N
+    # Test of automatic differentiation
 
+      ind = 1
+      for var_ind in ("IND", "VAR2", "VAR1")
+        for backend in Backends
+        if var_ind == "IND"
+          RelTol = reltol
+          AbsTol = abstol
+          ∂x0_flow = CTDiffFlow.build_∂x0_flow(fun_lin2, t0, x0, tf, λ; var_ind=:ind, backend = backend)
+        elseif var_ind =="VAR2"
+          RelTol = reltol
+          AbsTol = abstol
+          ∂x0_flow = CTDiffFlow.build_∂x0_flow(fun_lin2, t0, x0, tf, λ; backend = backend)
+        else
+          my_Inf = prevfloat(typemax(Float64))
+          n = length(x0)
+          p = n
+          RelTol = [reltol*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+          AbsTol = [abstol*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+          ∂x0_flow = CTDiffFlow.build_∂x0_flow(fun_lin2, t0, x0, tf, λ; backend = backend)
+        end
+        if adaptive
+            sol, T = ∂x0_flow(t0, x0, tf, λ; print_times=true, alg=algo, reltol=RelTol, abstol=AbsTol)
+        else
+            sol, T = ∂x0_flow(t0, x0, tf, λ; print_times=true, alg=algo, adaptive=false, dt=dt, reltol=RelTol, abstol=AbsTol)
+        end
+        push!(Sol,sol)
 
-println("Linear system, with respect to the initial condition")
-    for backend in Backends
-       println("backend = ", backend)
-
-      # Diff auto
-      # Derivative with respect to x0
-      λ = [1.0, 2]
-      t0 = 0.0;
-      tf = 1.0;
-      x0 = [λ[2], 1.0, 1]; 
-      ∂x0_flow = CTDiffFlow.build_∂x0_flow(fun_lin, t0, x0, tf, λ; backend = backend)
-      println("∂x0_flow = ", ∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol, print_times=true))
-      println("sol_∂xO_flow(tf,λ) = ", sol_∂xO_flow(tf,λ))
-      println("ccc", sol_∂xO_flow(tf,λ)-∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol))
-      
-      println(@test isapprox(sol_∂xO_flow(tf,λ), ∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol), atol=tol_error))
+      #println(∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol)-sol_∂xO_flow(tf,λ))
+        norm_inf = norm(sol-sol_∂xO_flow2(tf,λ),Inf)
+        if ind==1
+            norm_diff = NaN
+        else
+            norm_diff = norm(Sol[ind]-Sol[ind-1],Inf)
+        end
+        ind = ind+1
+        push!(df_sol, [var_ind, string(backend), norm_inf, norm_diff, T[2:3], length(T)])
+      #println("∂x0_flow = ", ∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol))
+      #println("sol_∂xO_flow(tf,λ) = ", sol_∂xO_flow(tf,λ))
+      #println(@test isapprox(sol_∂xO_flow(tf,λ), ∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol), atol=tol_error))
+       #  @test isapprox(sol_∂xO_flow(tf,λ), ∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol), atol=tol_error)
+      end
     end
+
+    return df_sol,Sol
+  end
+
+
+df_sol, Sol = main(true)
+println(df_sol)
+
+
+df_sol, Sol = main(false)
+println(df_sol)
