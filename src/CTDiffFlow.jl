@@ -4,7 +4,12 @@ using DifferentiationInterface
 using OrdinaryDiffEq
 using LinearAlgebra
 
+include("./myode43/myode43.jl")
 
+struct Sol
+    t
+    u
+end
 # Derivative with respect to x0
 function build_∂x0_flow(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; var_ind = :var, backend = AutoForwardDiff()) #,print_step=false)
     """
@@ -98,14 +103,42 @@ function build_∂x0_flow_var(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
     function ∂x0_flow(tspan::Tuple{<:Real,<:Real},x0::Vector{<:Real}, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
         n = length(x0)
         x0δx0 = [x0 Matrix(I(n))]
-        ivp = ODEProblem(rhs_var, x0δx0, tspan, λ)
         algo = get(ode_kwargs, :alg, Tsit5())
-        sol = solve(ivp, alg=algo; ode_kwargs...)
-        return sol
+        reltol = get(ode_kwargs, :reltol, 1.e-3)
+        abstol = get(ode_kwargs, :abstol, 1.e-6)
+        @assert (typeof(reltol)<:Real || length(reltol)==n || size(reltol)==(n,n+1)) "Error in the dimension of reltol" 
+
+        my_Inf = prevfloat(typemax(Float64))
+          n = length(x0)
+          p = n
+          if typeof(reltol) <: Real
+            RelTol = [reltol*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+          elseif length(reltol)==n
+            RelTol = [reltol.*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+          else  # reltol is a Matix (n,n+1)
+            RelTol = reltol
+          end
+          if typeof(abstol) <: Real
+            AbsTol = [abstol*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+          elseif length(reltol)==n
+            AbsTol = [abstol.*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+          else  # reltol is a Matix (n,n+1)
+            AbsTol = abstol
+          end
+          algo = get(ode_kwargs, :alg, Tsit5())
+          if algo=="myode43"
+            T,X = myode43(rhs_var,x0δx0,λ,(t0,tf),RelTol,AbsTol)
+            sol = Sol(T,X)
+            return sol
+          else
+            ivp = ODEProblem(rhs_var, x0δx0, tspan, λ)
+            sol = solve(ivp, alg=algo; ode_kwargs..., reltol=RelTol, abstol=AbsTol,)
+            return sol
+          end
     end
 
     function ∂x0_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
-        sol = ∂x0_flow((t0,tf),x0,λ; ode_kwargs...)
+        sol = ∂x0_flow((t0,tf),x0,λ; print_times, ode_kwargs...)
         if print_times
             return sol.u[end][:,2:end], sol.t
         else
@@ -143,11 +176,18 @@ function build_∂x0_flow_ind(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
     function ∂x0_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
         T = []
         function _flow(x0)
-            ivp = ODEProblem(rhs, x0, (t0,tf), λ)
             algo = get(ode_kwargs, :alg, Tsit5())
+            if algo=="myode43"
+                Rtol = get(ode_kwargs, :reltol, 1.e-3)
+                Atol = get(ode_kwargs, :abstol, 1.e-6)
+                T,X = myode43(rhs,x0,λ,(t0,tf),Rtol,Atol)
+                return X[end]
+            else
+            ivp = ODEProblem(rhs, x0, (t0,tf), λ)
             sol = solve(ivp, alg=algo; ode_kwargs...)
             T = sol.t
             return sol.u[end]
+            end
         end
         if print_times
             return jacobian(_flow,backend,x0), T

@@ -17,24 +17,27 @@ using DifferentiationInterface
 using ForwardDiff: ForwardDiff
 #using Enzyme: Enzyme
 using Mooncake: Mooncake
-#using Zygote: Zygote
+using Zygote: Zygote
 #using ReverseDiff: ReverseDiff
 
 using OrdinaryDiffEq
-using SciMLSensitivity
+
 
 #include("./fun_examples.jl")
 include("../src/CTDiffFlow.jl")
 using .CTDiffFlow
+include("../src/myode43/myode43.jl")
 
 function main(adaptive)
     tol_error = 2*eps()
     # Backends
     # Problems with Enzyme and Zygote
-    #Backend = (AutoEnzyme(), AutoForwardDiff(), AutoMooncake(), AutoZygote())
-    Backends = (AutoForwardDiff(), AutoMooncake())
-    reltol = 1.e-9;
-    abstol = 1.e-12
+    #Backends = (AutoEnzyme(), AutoForwardDiff(), AutoMooncake(), AutoZygote())
+    #Backends = (AutoForwardDiff(), AutoMooncake())
+    Backends = (AutoForwardDiff(),)
+    #Backends = (AutoMooncake(),)
+    reltol = 1.e-3;
+    abstol = 1.e-6
     tol_error = 10*max(reltol,abstol)
     #
     # Initial value problem
@@ -55,19 +58,29 @@ function main(adaptive)
 
     df_sol = DataFrame(VAR_IND=String[], backend=String[], norm_∞_error=Real[], norm_∞_diff=Real[], time_steps=Vector[], length_times=Real[])
     Sol = []
-    # Integration of the IVP
-    ivp = ODEProblem(fun_lin2, x0, (t0,tf), λ)
-    sol = solve(ivp, alg=Tsit5(), reltol = reltol, abstol = abstol)
-    push!(df_sol, ["IVP", "", NaN, NaN, sol.t[2:3], length(sol.t)])
     
     #algo = RK4()
-    algo = Tsit5()
+    #algo = Tsit5()
+    algo = "myode43"
+    # Integration of the IVP
+    if algo == "myode43"
+      T,X = myode43(fun_lin2,x0,λ,(t0,tf),reltol,abstol)
+      push!(df_sol, ["IVP", "", NaN, NaN, T[2:3], length(T)])
+    else
+      ivp = ODEProblem(fun_lin2, x0, (t0,tf), λ)
+      sol = solve(ivp, alg=Tsit5(), reltol = reltol, abstol = abstol)
+      push!(df_sol, ["IVP", "", NaN, NaN, sol.t[2:3], length(sol.t)])
+    end
+    
+
+
     N = 10
     dt = (tf-t0)/N
     # Test of automatic differentiation
 
       ind = 1
-      for var_ind in ("IND", "VAR2", "VAR1")
+      #for var_ind in ("IND", "VAR2", "VAR1")
+      for var_ind in ("IND",)
         for backend in Backends
         if var_ind == "IND"
           RelTol = reltol
@@ -81,8 +94,10 @@ function main(adaptive)
           my_Inf = prevfloat(typemax(Float64))
           n = length(x0)
           p = n
-          RelTol = [reltol*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
-          AbsTol = [abstol*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+          RelTol = reltol*ones(n,n+1)
+          #RelTol = reltol*ones(n,n) # ==> error of dimension
+          AbsTol = abstol*ones(n,n+1)
+
           ∂x0_flow = CTDiffFlow.build_∂x0_flow(fun_lin2, t0, x0, tf, λ; backend = backend)
         end
         if adaptive
@@ -92,7 +107,8 @@ function main(adaptive)
         end
         push!(Sol,sol)
 
-      #println(∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol)-sol_∂xO_flow(tf,λ))
+      #println(sol)
+      #println("sol_∂xO_flow2(tf,λ) = ", sol_∂xO_flow2(tf,λ))
         norm_inf = norm(sol-sol_∂xO_flow2(tf,λ),Inf)
         if ind==1
             norm_diff = NaN
@@ -111,10 +127,13 @@ function main(adaptive)
     return df_sol,Sol
   end
 
+#df_sol, Sol = main(false)
+#println(df_sol)
 
 df_sol, Sol = main(true)
 println(df_sol)
 
-
-df_sol, Sol = main(false)
+using SciMLSensitivity
+df_sol, Sol = main(true)
 println(df_sol)
+

@@ -4,34 +4,60 @@
 #
 #
 using LinearAlgebra
+using DualNumbers
+
+function mynorm(x::Real)::Real
+    return abs(x)
+end
+
+function mynorm(x::Dual)::Real
+    return mynorm(realpart(x))
+end
+
+function mynorm(x::Vector{<:Real})::Real
+    return norm(x)
+end
+function mynorm(x)::Real
+    return realpart(norm(x))
+end
+function mynorm(x::Matrix{<:Real})::Real
+    return norm((x))
+end
+
+function mynorm(x)::Real
+    return realpart(norm(x))
+end
+
 function inith(rhs,x0,par,t0,Atol,Rtol)
   #
   #
   n = length(x0);
   sc = Atol .+ abs.(x0) .* Rtol;
-  println("sc = ", sc)
-  println("x0 = ", x0)
   k0 = rhs(x0, par, t0);
-  println(x0./sc)
-  println(norm(x0./sc))
-  d0 =  norm(x0./sc)/sqrt(n);              # normalement c'est la bonne valeur cf page 168
-  d1 =  norm(k0./sc)/sqrt(n);              # normalement c'est la bonne valeur cf page 168
-  #d0 =  norm(x0./sc); 
-  #d1 =  norm(k0./sc);
+  println("x0./sc =", x0./sc)
+  println("mynorm(x0./sc) = ",mynorm(x0./sc))
+  println("n=", n)
+  d0 =  mynorm(x0./sc)/sqrt(n);              # normalement c'est la bonne valeur cf page 168
+  println("d0 = ", d0)
+  d1 =  mynorm(k0./sc)/sqrt(n);              # normalement c'est la bonne valeur cf page 168
+  #d0 =  mynorm(x0./sc); 
+  #d1 =  mynorm(k0./sc);
   h0 = 0.01*(d0/d1);
+  println("h0 = ", h0)
   if (d0 < 1.e-5) || (d1 < 1.e-5)
     h0 = 1.e-6;
   end;  
   x1 = x0 + h0*k0;
   k1 = rhs(x1,par,t0+h0);
-  d2 =  norm((k1-k0)./sc)/sqrt(n)/h0;      # normalement c'est la bonne valeur cf page 168
-  #d2 =  norm((k1-k0)./sc)/h0;
+  d2 =  mynorm((k1-k0)./sc)/sqrt(n)/h0;      # normalement c'est la bonne valeur cf page 168
+  #d2 =  mynorm((k1-k0)./sc)/h0;
   if max(d1,d2) < 1.e-15
     h1 = max(1.e-6,h0*1.e-3);
   else
     h1 = (0.01/max(d1,d2))^(1/4);  
   end
   h = min(100*h0,h1);
+  println("h_init = ", h)
   return h
 end
 
@@ -39,7 +65,7 @@ end
 function myode43(rhs,x0,par,t0tf,Rtol,Atol)
 #
 # Initialisation
-  Scal_Type=eltype(par)
+  Scal_Type=eltype(x0)
   p=4; # ordre
   t0=t0tf[1]; tf=t0tf[2];
   hmax=tf-t0;
@@ -53,11 +79,11 @@ function myode43(rhs,x0,par,t0tf,Rtol,Atol)
   # step initialisation
   #h=0.03;
   h=inith(rhs,x0,par,t0,Atol,Rtol)
-  #println("h= ",h)
   #
   nstep=0;
   t=t0
   x=x0; fin=0;
+  println("t0 = ", t0)
   while (nstep < Npasmax) && (fin == 0)
     nstep = nstep+1
     # Runge-Kutta method
@@ -70,13 +96,14 @@ function myode43(rhs,x0,par,t0tf,Rtol,Atol)
     # err
     sc = Atol .+ max.(abs.(x),abs.(x1)) .* Rtol;
     #println("sc = ", sc)
-    err = norm((x1-xhat1)./sc)/sqrt(n);
+    err = mynorm((x1-xhat1)./sc)/sqrt(n);
     # println("err = ", err)
     #
     # calcul du pas
     if (err < 1)
+      println("h = ",h)
       t = t+h; x = x1;
-      #println("t= ",t)
+      println("t= ",t)
       #println("T= ",T)
       #println("X= ",X)
       push!(T, t)
@@ -84,9 +111,9 @@ function myode43(rhs,x0,par,t0tf,Rtol,Atol)
       #println("x1= ",x1)
       push!(X, x1)
       #println("X= ",X)
-    if (t > tf-h/2)
-      fin = 1;
-    end;  
+      if (t > tf*(1. - eps()))
+        fin = 1;
+      end;  
     end;  
     h = h*min(5,max(0.2,0.9*(1/err)^(1/p)));
     if (t+h > tf)
