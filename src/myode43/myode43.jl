@@ -30,20 +30,22 @@ end
 
 function inith(rhs,x0,par,t0,Atol,Rtol)
   #
-  #
   n = length(x0);
   sc = Atol .+ abs.(x0) .* Rtol;
   k0 = rhs(x0, par, t0);
+  #=println("x0 = ", x0)
+  println("sc = ", sc)
   println("x0./sc =", x0./sc)
   println("mynorm(x0./sc) = ",mynorm(x0./sc))
   println("n=", n)
+  =#
   d0 =  mynorm(x0./sc)/sqrt(n);              # normalement c'est la bonne valeur cf page 168
-  println("d0 = ", d0)
+  #println("d0 = ", d0)
   d1 =  mynorm(k0./sc)/sqrt(n);              # normalement c'est la bonne valeur cf page 168
   #d0 =  mynorm(x0./sc); 
   #d1 =  mynorm(k0./sc);
   h0 = 0.01*(d0/d1);
-  println("h0 = ", h0)
+  #println("h0 = ", h0)
   if (d0 < 1.e-5) || (d1 < 1.e-5)
     h0 = 1.e-6;
   end;  
@@ -57,11 +59,11 @@ function inith(rhs,x0,par,t0,Atol,Rtol)
     h1 = (0.01/max(d1,d2))^(1/4);  
   end
   h = min(100*h0,h1);
-  println("h_init = ", h)
+  #println("h_init = ", h)
   return h
 end
 
-
+# variable steps
 function myode43(rhs,x0,par,t0tf,Rtol,Atol)
 #
 # Initialisation
@@ -79,11 +81,12 @@ function myode43(rhs,x0,par,t0tf,Rtol,Atol)
   # step initialisation
   #h=0.03;
   h=inith(rhs,x0,par,t0,Atol,Rtol)
+  #println("h_init = ",h)
   #
   nstep=0;
   t=t0
   x=x0; fin=0;
-  println("t0 = ", t0)
+  #println("t0 = ", t0)
   while (nstep < Npasmax) && (fin == 0)
     nstep = nstep+1
     # Runge-Kutta method
@@ -101,9 +104,9 @@ function myode43(rhs,x0,par,t0tf,Rtol,Atol)
     #
     # calcul du pas
     if (err < 1)
-      println("h = ",h)
+      #println("h = ",h)
       t = t+h; x = x1;
-      println("t= ",t)
+      #println("t= ",t)
       #println("T= ",T)
       #println("X= ",X)
       push!(T, t)
@@ -121,6 +124,29 @@ function myode43(rhs,x0,par,t0tf,Rtol,Atol)
     end;  
   end;
 
+    return T,X
+  end
+
+
+  # Fixed steps
+  function myode43(rhs,x0,par,t0tf,T)
+    Scal_Type=eltype(x0)
+    t0=t0tf[1]; tf=t0tf[2];
+    n = length(x0);
+    N = length(T)-1
+    X = [Scal_Type.(x0)]
+    x = x0
+   
+    for i in 1:N
+      t = T[i]; h = T[i+1]-T[i]
+      k1 = rhs(x,par,t);
+      k2 = rhs(x+(h/3)*k1,par,t+h/3,);
+      k3 = rhs(x+h*(-k1/3+k2),par,t+2*h/3);
+      k4 = rhs(x+h*(k1-k2+k3),par,t+h);
+      x1 = x+(h/8)*(k1+3*k2+3*k3+k4);
+      x = x1;
+      push!(X, x1)
+    end  
     return T,X
   end
 

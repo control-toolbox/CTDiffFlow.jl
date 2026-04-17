@@ -107,7 +107,7 @@ function build_∂x0_flow_var(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
         reltol = get(ode_kwargs, :reltol, 1.e-3)
         abstol = get(ode_kwargs, :abstol, 1.e-6)
         @assert (typeof(reltol)<:Real || length(reltol)==n || size(reltol)==(n,n+1)) "Error in the dimension of reltol" 
-
+        adaptative = get(ode_kwargs, :adaptative, true)
         my_Inf = prevfloat(typemax(Float64))
           n = length(x0)
           p = n
@@ -128,11 +128,11 @@ function build_∂x0_flow_var(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
           algo = get(ode_kwargs, :alg, Tsit5())
           if algo=="myode43"
             T,X = myode43(rhs_var,x0δx0,λ,(t0,tf),RelTol,AbsTol)
-            sol = Sol(T,X)
+            sol = Sol(T,X) # for having the same structure as standard numerical integration
             return sol
           else
             ivp = ODEProblem(rhs_var, x0δx0, tspan, λ)
-            sol = solve(ivp, alg=algo; ode_kwargs..., reltol=RelTol, abstol=AbsTol,)
+            sol = solve(ivp, alg=algo; ode_kwargs..., reltol=RelTol, abstol=AbsTol, adaptive=true)
             return sol
           end
     end
@@ -168,25 +168,52 @@ function build_∂λ_flow_var(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
     return ∂λ_flow
 end
 
-# Automatic differentiation on the flow
-# derivatives with respect to x0
 function build_∂x0_flow_ind(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; backend = AutoForwardDiff())
 
     # Jacobian matrix
     function ∂x0_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
-        T = []
+        
+# Automatic differentiation on the flow
+# derivatives with respect to x0
+        algo = get(ode_kwargs, :alg, Tsit5())
+        adaptive = get(ode_kwargs, :adaptive, true)
+        if algo=="myode43"
+            Rtol = get(ode_kwargs, :reltol, 1.e-3)
+            Atol = get(ode_kwargs, :abstol, 1.e-6)
+            T,X = myode43(rhs,x0,λ,(t0,tf),Rtol,Atol)
+        else
+            ivp = ODEProblem(rhs, x0, (t0,tf), λ)
+            sol = solve(ivp, alg=algo; ode_kwargs..., adaptive=true)
+            T = sol.t
+        end
+
+        
         function _flow(x0)
-            algo = get(ode_kwargs, :alg, Tsit5())
             if algo=="myode43"
-                Rtol = get(ode_kwargs, :reltol, 1.e-3)
-                Atol = get(ode_kwargs, :abstol, 1.e-6)
-                T,X = myode43(rhs,x0,λ,(t0,tf),Rtol,Atol)
+                if adaptive
+                  Rtol = get(ode_kwargs, :reltol, 1.e-3)
+                  Atol = get(ode_kwargs, :abstol, 1.e-6)
+                  T,X = myode43(rhs,x0,λ,(t0,tf),Rtol,Atol)
+                else
+                  T,X = myode43(rhs,x0,λ,(t0,tf),T)
+                end    
                 return X[end]
             else
-            ivp = ODEProblem(rhs, x0, (t0,tf), λ)
-            sol = solve(ivp, alg=algo; ode_kwargs...)
-            T = sol.t
-            return sol.u[end]
+                if adaptive
+                    ivp = ODEProblem(rhs, x0, (t0,tf), λ)
+                    sol = solve(ivp, alg=algo; ode_kwargs...)
+                    T = sol.t
+                    return sol.u[end]
+                else
+                    xi = x0
+                    for i in 2:length(T)
+                        dt = T[i] - T[i-1]
+                        ivp = ODEProblem(rhs, xi, (T[i-1],T[i]), λ)
+                        xi = solve(ivp, alg=algo, adaptive=adaptive, dt=dt; ode_kwargs...).u[end]
+
+                    end
+                    return xi
+                end
             end
         end
         if print_times
