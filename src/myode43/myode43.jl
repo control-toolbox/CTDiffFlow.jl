@@ -4,89 +4,85 @@
 #
 #
 using LinearAlgebra
-using DualNumbers
+using ForwardDiff: ForwardDiff 
 
-function mynorm(x::Real)::Real
-    return abs(x)
+# variable steps
+function myode43(rhs,x0,par,t0tf,Rtol,Atol;internalnorm=:default)
+
+# Definition of the norm for having the good steps
+# when datas are ForwardDiff.Dual numbers
+if internalnorm == :default
+    sse(x::Number) = x^2
+    sse(x::ForwardDiff.Dual) = sse(ForwardDiff.value(x)) #+ sum(sse, ForwardDiff.partials(x))
+    totallength(x::Number) = 1
+    function totallength(x::ForwardDiff.Dual)
+      totallength(ForwardDiff.value(x)) #+ sum(totallength, ForwardDiff.partials(x)).  
+    end
+    totallength(x::AbstractArray) = sum(totallength, x)
+    function mynorm(u)
+      return sqrt(sum(x -> sse(x), u) / totallength(u))
+    end
+else
+  # internal norm as in DifferentialEquation.jl
+  t = t0tf[1]
+  mynorm = u -> internalnorm(u,t)
 end
 
-function mynorm(x::Dual)::Real
-    return mynorm(realpart(x))
+#=
+if eltype(x0) <: ForwardDiff.Dual
+  Atol = Atol*
 end
-
-function mynorm(x::Vector{<:Real})::Real
-    return norm(x)
-end
-function mynorm(x)::Real
-    return realpart(norm(x))
-end
-function mynorm(x::Matrix{<:Real})::Real
-    return norm((x))
-end
-
-function mynorm(x)::Real
-    return realpart(norm(x))
-end
+=#
 
 function inith(rhs,x0,par,t0,Atol,Rtol)
   #
   n = length(x0);
+  #println("Atol = ", Atol)
+  #println("Rtol = ", Rtol)
+  #println("abs.(x0) .* Rtol =" , abs.(x0) .* Rtol)
   sc = Atol .+ abs.(x0) .* Rtol;
+  #println("sc = ", sc)
   k0 = rhs(x0, par, t0);
-  #=println("x0 = ", x0)
-  println("sc = ", sc)
-  println("x0./sc =", x0./sc)
-  println("mynorm(x0./sc) = ",mynorm(x0./sc))
-  println("n=", n)
-  =#
-  d0 =  mynorm(x0./sc)/sqrt(n);              # normalement c'est la bonne valeur cf page 168
+  #println("k0 = ",k0)
+  #println("x0./sc = ", x0./sc)
+  d0 =  mynorm(x0./sc);            # normalement c'est la bonne valeur cf page 168
   #println("d0 = ", d0)
-  d1 =  mynorm(k0./sc)/sqrt(n);              # normalement c'est la bonne valeur cf page 168
-  #d0 =  mynorm(x0./sc); 
-  #d1 =  mynorm(k0./sc);
+  d1 =  mynorm(k0./sc);              # normalement c'est la bonne valeur cf page 168
   h0 = 0.01*(d0/d1);
-  #println("h0 = ", h0)
   if (d0 < 1.e-5) || (d1 < 1.e-5)
     h0 = 1.e-6;
   end;  
   x1 = x0 + h0*k0;
   k1 = rhs(x1,par,t0+h0);
-  d2 =  mynorm((k1-k0)./sc)/sqrt(n)/h0;      # normalement c'est la bonne valeur cf page 168
-  #d2 =  mynorm((k1-k0)./sc)/h0;
+  d2 =  mynorm((k1-k0)./sc)/h0;      # normalement c'est la bonne valeur cf page 168
   if max(d1,d2) < 1.e-15
     h1 = max(1.e-6,h0*1.e-3);
   else
     h1 = (0.01/max(d1,d2))^(1/4);  
   end
   h = min(100*h0,h1);
-  #println("h_init = ", h)
   return h
 end
-
-# variable steps
-function myode43(rhs,x0,par,t0tf,Rtol,Atol)
 #
 # Initialisation
-  Scal_Type=eltype(x0)
+  #Scal_Type=eltype(x0)
   p=4; # ordre
   t0=t0tf[1]; tf=t0tf[2];
   hmax=tf-t0;
   Npasmax=1000;
   n = length(x0);
-  T = [Scal_Type(t0)]; 
+  T = [t0]; 
   #T = [t0];
-  X = [Scal_Type.(x0)]
+  #X = [Scal_Type.(x0)]
+  X = [x0]
   #
   #
   # step initialisation
-  #h=0.03;
   h=inith(rhs,x0,par,t0,Atol,Rtol)
-  #println("h_init = ",h)
-  #
   nstep=0;
   t=t0
   x=x0; fin=0;
-  #println("t0 = ", t0)
+
   while (nstep < Npasmax) && (fin == 0)
     nstep = nstep+1
     # Runge-Kutta method
@@ -98,22 +94,12 @@ function myode43(rhs,x0,par,t0tf,Rtol,Atol)
     xhat1 = x+(h/12)*(k1+6*k2+3*k3+2*rhs(x1,par,t));
     # err
     sc = Atol .+ max.(abs.(x),abs.(x1)) .* Rtol;
-    #println("sc = ", sc)
-    err = mynorm((x1-xhat1)./sc)/sqrt(n);
-    # println("err = ", err)
-    #
+    err = mynorm((x1-xhat1)./sc);
     # calcul du pas
     if (err < 1)
-      #println("h = ",h)
       t = t+h; x = x1;
-      #println("t= ",t)
-      #println("T= ",T)
-      #println("X= ",X)
       push!(T, t)
-      #println("T= ",T)
-      #println("x1= ",x1)
       push!(X, x1)
-      #println("X= ",X)
       if (t > tf*(1. - eps()))
         fin = 1;
       end;  
@@ -129,10 +115,8 @@ function myode43(rhs,x0,par,t0tf,Rtol,Atol)
 
 
   # Fixed steps
-  function myode43(rhs,x0,par,t0tf,T)
+  function myode43(rhs,x0,par,T)
     Scal_Type=eltype(x0)
-    t0=t0tf[1]; tf=t0tf[2];
-    n = length(x0);
     N = length(T)-1
     X = [Scal_Type.(x0)]
     x = x0

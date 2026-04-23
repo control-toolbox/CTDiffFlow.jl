@@ -107,34 +107,50 @@ function build_∂x0_flow_var(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
         reltol = get(ode_kwargs, :reltol, 1.e-3)
         abstol = get(ode_kwargs, :abstol, 1.e-6)
         @assert (typeof(reltol)<:Real || length(reltol)==n || size(reltol)==(n,n+1)) "Error in the dimension of reltol" 
-        adaptative = get(ode_kwargs, :adaptative, true)
-        my_Inf = prevfloat(typemax(Float64))
-          n = length(x0)
-          p = n
-          if typeof(reltol) <: Real
-            RelTol = [reltol*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
-          elseif length(reltol)==n
-            RelTol = [reltol.*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
-          else  # reltol is a Matix (n,n+1)
-            RelTol = reltol
-          end
-          if typeof(abstol) <: Real
-            AbsTol = [abstol*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
-          elseif length(reltol)==n
-            AbsTol = [abstol.*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
-          else  # reltol is a Matix (n,n+1)
-            AbsTol = abstol
-          end
-          algo = get(ode_kwargs, :alg, Tsit5())
-          if algo=="myode43"
-            T,X = myode43(rhs_var,x0δx0,λ,(t0,tf),RelTol,AbsTol)
-            sol = Sol(T,X) # for having the same structure as standard numerical integration
-            return sol
-          else
-            ivp = ODEProblem(rhs_var, x0δx0, tspan, λ)
-            sol = solve(ivp, alg=algo; ode_kwargs..., reltol=RelTol, abstol=AbsTol, adaptive=true)
-            return sol
-          end
+        adaptive = get(ode_kwargs, :adaptive, true)
+        if adaptive
+            my_Inf = prevfloat(typemax(Float64))
+            n = length(x0)
+            p = n
+            if typeof(reltol) <: Real
+              RelTol = [reltol*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+            elseif length(reltol)==n
+              RelTol = [reltol.*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+            else  # reltol is a Matix (n,n+1)
+              RelTol = reltol
+            end
+            if typeof(abstol) <: Real
+              AbsTol = [abstol*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+            elseif length(reltol)==n
+              AbsTol = [abstol.*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+            else  # reltol is a Matix (n,n+1)
+              AbsTol = abstol
+            end
+            algo = get(ode_kwargs, :alg, Tsit5())
+            if algo=="myode43"
+              internalnorm = get(ode_kwargs, :internalnorm, :default)
+              T,X = myode43(rhs_var,x0δx0,λ,(t0,tf),RelTol,AbsTol; internalnorm=internalnorm)
+              sol = Sol(T,X) # for having the same structure as standard numerical integration
+             return sol
+            else
+              ivp = ODEProblem(rhs_var, x0δx0, tspan, λ)
+              sol = solve(ivp, alg=algo; ode_kwargs..., reltol=RelTol, abstol=AbsTol)
+              return sol
+            end
+        else
+            t0 = tspan[1]; tf = tspan[2];
+            dt = get(ode_kwargs, :dt, (tf-t0)/100)
+            if algo=="myode43"
+              T,X = myode43(rhs_var,x0δx0,λ,t0:dt:tf)
+              sol = Sol(T,X) # for having the same structure as standard numerical integration
+             return sol
+            else
+              ivp = ODEProblem(rhs_var, x0δx0, tspan, λ)
+              sol = solve(ivp, alg=algo; ode_kwargs...)
+              return sol
+            end
+
+        end
     end
 
     function ∂x0_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
@@ -180,12 +196,14 @@ function build_∂x0_flow_ind(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
         if algo=="myode43"
             Rtol = get(ode_kwargs, :reltol, 1.e-3)
             Atol = get(ode_kwargs, :abstol, 1.e-6)
-            T,X = myode43(rhs,x0,λ,(t0,tf),Rtol,Atol)
+            internalnorm = get(ode_kwargs, :internalnorm, :default)
+            T,X = myode43(rhs,x0,λ,(t0,tf),Rtol,Atol; internalnorm=internalnorm)
         else
             ivp = ODEProblem(rhs, x0, (t0,tf), λ)
-            sol = solve(ivp, alg=algo; ode_kwargs..., adaptive=true)
+            sol = solve(ivp, alg=algo; ode_kwargs...)
             T = sol.t
         end
+
 
         
         function _flow(x0)
@@ -195,25 +213,16 @@ function build_∂x0_flow_ind(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
                   Atol = get(ode_kwargs, :abstol, 1.e-6)
                   T,X = myode43(rhs,x0,λ,(t0,tf),Rtol,Atol)
                 else
-                  T,X = myode43(rhs,x0,λ,(t0,tf),T)
+                  dt = get(ode_kwargs, :dt, (tf-t0)/100)
+                  T,X = myode43(rhs,x0,λ,t0:dt:tf)
                 end    
                 return X[end]
             else
-                if adaptive
-                    ivp = ODEProblem(rhs, x0, (t0,tf), λ)
-                    sol = solve(ivp, alg=algo; ode_kwargs...)
-                    T = sol.t
-                    return sol.u[end]
-                else
-                    xi = x0
-                    for i in 2:length(T)
-                        dt = T[i] - T[i-1]
-                        ivp = ODEProblem(rhs, xi, (T[i-1],T[i]), λ)
-                        xi = solve(ivp, alg=algo, adaptive=adaptive, dt=dt; ode_kwargs...).u[end]
 
-                    end
-                    return xi
-                end
+                ivp = ODEProblem(rhs, x0, (t0,tf), λ)
+                sol = solve(ivp, alg=algo; ode_kwargs...)
+                T = sol.t
+                return sol.u[end]
             end
         end
         if print_times

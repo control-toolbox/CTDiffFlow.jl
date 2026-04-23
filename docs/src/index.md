@@ -56,6 +56,9 @@ The other possilities for computing this derivative are
 ```
 
 * to use the automatic differentiation on the flow, what is known also in the literature as the Internal Numerical Differentiation[^1].
+to do : explain that it's necessary not to differentate the step h(p) and the "number of iterations for solving the non linear equations in case of implicit method.
+
+So the following scheme commutes
 
 <!--
 ```math
@@ -68,6 +71,7 @@ The other possilities for computing this derivative are
 ```
 -->
 
+
 [^1]: H. G. Bock, *Numerical treatment of inverse problems in chemical reaction kinetics*, in K. H. Ebert, P. Deuflhard, and W. Jäger, editors, *Modelling of Chemical Reaction Systems*, volume 18 of *Springer Series in
 Chemical Physics*, pages 102–125. Springer, Heidelberg, 1981.
 
@@ -75,7 +79,7 @@ Chemical Physics*, pages 102–125. Springer, Heidelberg, 1981.
 
 ## First numerical results
 ### Test example
-We numerical results are obtained on the following example $\lambda = (1,2)$
+The numerical results are obtained on the following example $\lambda = (1,2)$
 
 ```math
 (IVP)\left\{\begin{array}{l}
@@ -125,8 +129,42 @@ And the dérivative with respect to the initial condition is
 ```
 -->
 
-### Numerical results
+### Numerical results For fixed steps
 
+```julia
+include("../../test/test_ForwardDiff.jl")
+df_sol = DataFrame(adaptive=Bool[], VAR_IND=String[], internalnorm=String[], norm_∞_error=Real[], norm_∞_diff=Real[], time_steps=Vector[])
+
+test_FD!(df_sol,fun_lin, tspan, x0, λ, sol_∂xO_flow,false)
+
+println(df_sol)
+```
+
+### Numerical results For variable steps
+
+#### with my_norm
+
+
+```julia
+df_sol = DataFrame(adaptive=Bool[], VAR_IND=String[], internalnorm=String[], norm_∞_error=Real[], norm_∞_diff=Real[], time_steps=Vector[])
+
+
+# with my_norm the diagram switches 
+sse(x::Number) = x^2
+sse(x::ForwardDiff.Dual) = sse(ForwardDiff.value(x)) #+ sum(sse, ForwardDiff.partials(x))
+totallength(x::Number) = 1
+function totallength(x::ForwardDiff.Dual)
+  totallength(ForwardDiff.value(x)) #+ sum(totallength, ForwardDiff.partials(x))
+end
+totallength(x::AbstractArray) = sum(totallength, x)
+function my_norm(u, t)
+  return sqrt(sum(x -> sse(x), u) / totallength(u))
+end
+
+test_FD!(df_sol,fun_lin, tspan, x0, λ, sol_∂xO_flow,true,internalnorm=my_norm)
+println(df_sol)
+
+```
 
 ## Reproducibility
 
