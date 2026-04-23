@@ -129,7 +129,7 @@ And the dérivative with respect to the initial condition is
 ```
 -->
 
-### Numerical results For fixed steps
+### Numerical results for fixed steps
 
 ```julia
 include("../../test/test_ForwardDiff.jl")
@@ -140,7 +140,16 @@ test_FD!(df_sol,fun_lin, tspan, x0, λ, sol_∂xO_flow,false)
 println(df_sol)
 ```
 
-### Numerical results For variable steps
+* VAR_IND
+	* name of the numerical integration
+    * IND : IND of Bock
+    * VAR2 : variational equation with steps control on the initial variables
+    * VAR1 : variational equation with steps control on all the variables
+* internalnorm : internalnorm for tests on errors
+* norm_∞_error : error with the analytique solution
+* norm_∞_diff : error with the solution of the previous line
+
+### Numerical results for variable steps
 
 #### with my_norm
 
