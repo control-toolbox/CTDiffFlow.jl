@@ -139,7 +139,25 @@ test_FD!(df_sol,fun_lin, tspan, x0, λ, sol_∂xO_flow,false)
 
 println(df_sol)
 ```
-
+ | Row | adaptive | VAR_IND  |  internalnorm | norm_∞_error | norm_∞_diff | time_steps  |
+ |:----|:---------|:---------|:--------------|:-------------|:------------|:------------|
+ |     | Bool     | String   |  String       | Real         | Real        | Vector      |
+ |  1  |   false |  myode43 |    default  |      NaN  |   NaN  |  [0.05, 0.1] |
+ |  2  |    false |  IND    |    default  |       1.13316e-5 |       NaN   | [0.05, 0.1] |
+ |  3  |    false |  VAR2   |    default  |       1.13316e-5 |         0.0 | [0.05, 0.1] |
+ |  4  |    false |  VAR1   |    default  |       1.13316e-5 |         0.0 | [0.05, 0.1] |
+ |  5  |    false |  RK4    |    default  |     NaN          |       NaN   | [0.05, 0.1] |
+ |  6  |    false |  IND    |    default  |       1.13316e-5 |       NaN   | [0.05, 0.1] |
+ |  7  |    false |  VAR2   |    default  |       1.13316e-5 |         0.0 | [0.05, 0.1] |
+ |  8  |    false |  VAR1   |    default  |       1.13316e-5 |         0.0 | [0.05, 0.1] |
+ |  9  |    false |  Tsit5  |    default  |     NaN          |       NaN   || [0.05, 0.1] |
+ | 10  |    false |  IND    |    default  |       3.10631e-9 |       NaN   | [0.05, 0.1] |
+ | 11  |    false |  VAR2   |    default  |       3.10631e-9 |         0.0 | [0.05, 0.1] |
+ | 12  |    false |  VAR1   |    default  |      3.10631e-9  ||        0.0 | [0.05, 0.1] |
+ | 13  |    false |  RadauIIA5 |  default |      NaN         |        NaN  |  [0.05, 0.1] |
+ | 14  |    false |  IND    |    default  |       2.08895e-8 |       NaN   | [0.05, 0.1] |
+ | 15  |    false |  VAR2   |    default  |       2.08895e-8 |         0.0 | [0.05, 0.1] |
+ | 16  |    false |  VAR1   |    default  |       2.08895e-8 |         0.0 | [0.05, 0.1] |
 * VAR_IND
 	* name of the numerical integration
     * IND : IND of Bock
@@ -174,6 +192,26 @@ test_FD!(df_sol,fun_lin, tspan, x0, λ, sol_∂xO_flow,true,internalnorm=my_norm
 println(df_sol)
 
 ```
+
+ | Row | adaptive | VAR_IND  |  internalnorm | norm_∞_error | norm_∞_diff | time_steps  |
+ |:----|:---------|:---------|:--------------|:-------------|:------------|:------------|
+ |     | Bool     | String   |  String       | Real         | Real        | Vector      |
+ |  1  |     true | myode43  |  my_norm      | NaN          |  NaN        |   [0.044956, 0.269736]|
+ |  2  |     true | IND      |  my_norm      |   0.00984532 |  NaN        |    [0.044956, 0.269736]|
+ |  3  |     true | VAR2     |  my_norm      |   0.00984532 |    0.0      |    [0.044956, 0.269736]|
+ |  4  |     true | VAR1     |  my_norm      |   0.013199   |  0.00335368 |   [0.0490278, 0.294167]|
+ |  5  |     true | RK4      |  my_norm      | NaN          |  NaN        |    [0.044956, 0.102922]|
+ |  6  |     true | IND      |  my_norm      |   0.000368325 | NaN        |    [0.044956, 0.102922]|
+ |  7  |     true | VAR2     |  my_norm      |   0.000368325 |   0.0      |    [0.044956, 0.102922]|
+ |  8  |     true | VAR1     |  my_norm      |   0.000513877 | 0.000145553|  [0.0490278, 0.112227]|
+ |  9  |     true | Tsit5    |  my_norm      | NaN           | NaN        |    [0.0836045, 0.241822]|
+ | 10  |     true | IND      |  my_norm      |   1.58866e-5  | NaN        |    [0.0836045, 0.241822]|
+ | 11  |     true | VAR2     |  my_norm      |   1.58866e-5  |   0.0      |    [0.0836045, 0.241822]|
+ | 12  |     true | VAR1     |  my_norm      |   1.45191e-5  | 1.36745e-6 |  [0.0896094, 0.25958]|
+ | 13  |     true | RadauIIA5|  my_norm      | NaN           | NaN        |    [0.0836045, 0.421748]|
+ | 14  |     true | IND      |  my_norm      |   0.000278511 | NaN        |    [0.0836045, 0.421748]|
+ | 15  |     true | VAR2     |  my_norm      |   0.000388466 | 0.000109955|  [0.0836045, 0.441859]|
+ | 16  |     true | VAR1     |  my_norm      |   0.000462982 |   7.4516e-5|    [0.0896094, 0.45849]|
 
 ## Reproducibility
 

@@ -1,5 +1,6 @@
 using Pkg
-Pkg.activate("../..")
+#Pkg.activate(".")
+Pkg.activate("../")
 #Pkg.add("ReverseDiff")
 #Pkg.add("DataFrames")
 #Pkg.add("SciMLSensitivity")
@@ -142,6 +143,28 @@ x0 = [1., 2., 3]
 # jacobien of the flow
 sol_∂xO_flow = exp(tf*A(λ))
 
+
+df_sol = DataFrame(adaptive=Bool[], VAR_IND=String[], internalnorm=String[], norm_∞_error=Real[], norm_∞_diff=Real[], time_steps=Vector[])
+
+#test_FD!(df_sol,fun_lin, tspan, x0, λ, sol_∂xO_flow,false)
+
+#println(df_sol)
+
+# with my_norm the diagram switches 
+sse(x::Number) = x^2
+sse(x::ForwardDiff.Dual) = sse(ForwardDiff.value(x)) #+ sum(sse, ForwardDiff.partials(x))
+totallength(x::Number) = 1
+function totallength(x::ForwardDiff.Dual)
+  totallength(ForwardDiff.value(x)) #+ sum(totallength, ForwardDiff.partials(x))
+end
+totallength(x::AbstractArray) = sum(totallength, x)
+function my_norm(u, t)
+  return sqrt(sum(x -> sse(x), u) / totallength(u))
+end
+
+df_sol, Sol = test_FD!(df_sol,fun_lin, tspan, x0, λ, sol_∂xO_flow,true,internalnorm=my_norm)#, Algorithmes = ((RK4(), 3),))
+println(df_sol)
+
 #=
 
 # in the automatic differentiation of the flow there is h'(p) the step derivative, 
@@ -182,20 +205,7 @@ end
 test_FD!(df_sol,fun_lin, tspan, x0, λ, sol_∂xO_flow,true,internalnorm=my_norm2, Algorithmes = algo, VarInd = var_ind)
 #test_FD!(df_sol,fun_lin, tspan, x0, λ, sol_∂xO_flow,true,internalnorm=my_norm2, Algorithmes = ((RK4(), 3),))
 #
-# with my_norm the diagram switches 
-sse(x::Number) = x^2
-sse(x::ForwardDiff.Dual) = sse(ForwardDiff.value(x)) #+ sum(sse, ForwardDiff.partials(x))
-totallength(x::Number) = 1
-function totallength(x::ForwardDiff.Dual)
-  totallength(ForwardDiff.value(x)) #+ sum(totallength, ForwardDiff.partials(x))
-end
-totallength(x::AbstractArray) = sum(totallength, x)
-function my_norm(u, t)
-  return sqrt(sum(x -> sse(x), u) / totallength(u))
-end
 
-#df_sol, Sol = test_FD(fun_lin, tspan, x0, λ, sol_∂xO_flow,true,internalnorm=my_norm)#, Algorithmes = ((RK4(), 3),("myode43", 7),(Tsit5(), 5),(RadauIIA5(), 9)))
-#println(df_sol)
 
 #
 
