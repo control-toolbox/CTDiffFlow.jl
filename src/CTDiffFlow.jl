@@ -69,7 +69,7 @@ function built_rhs_var(rhs::Function; wrt = :x0, backend = AutoForwardDiff() )
             The 2:end column is the state X of the variational equations
     """
 
-    @assert (wrt == :x0 || wrt == :λ || wrt ==:t0) "Error the wrt optional argument of the built_rhs_var function is not equal to :x0 or :λ ot :t0"
+    @assert (wrt == :x0 || wrt == :λ || wrt ==:t0) "Error the wrt optional argument of the built_rhs_var function is not equal to :x0, :λ or :t0"
     fun_x(x,λ,t) = jacobian(x -> rhs(x,λ,t), backend, x)
     if wrt == :λ
         fun_λ(x,λ,t) = jacobian(λ -> rhs(x,λ,t), backend, λ)
@@ -127,29 +127,15 @@ function build_∂x0_flow_var(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
               AbsTol = abstol
             end
             algo = get(ode_kwargs, :alg, Tsit5())
-            if algo=="myode43"
-              internalnorm = get(ode_kwargs, :internalnorm, :default)
-              T,X = myode43(rhs_var,x0δx0,λ,(t0,tf),RelTol,AbsTol; internalnorm=internalnorm)
-              sol = Sol(T,X) # for having the same structure as standard numerical integration
-             return sol
-            else
-              ivp = ODEProblem(rhs_var, x0δx0, tspan, λ)
-              sol = solve(ivp, alg=algo; ode_kwargs..., reltol=RelTol, abstol=AbsTol)
-              return sol
-            end
+            ivp = ODEProblem(rhs_var, x0δx0, tspan, λ)
+            sol = solve(ivp, alg=algo; ode_kwargs..., reltol=RelTol, abstol=AbsTol)
+            return sol
         else
             t0 = tspan[1]; tf = tspan[2];
-            dt = get(ode_kwargs, :dt, (tf-t0)/100)
-            if algo=="myode43"
-              T,X = myode43(rhs_var,x0δx0,λ,t0:dt:tf)
-              sol = Sol(T,X) # for having the same structure as standard numerical integration
-             return sol
-            else
-              ivp = ODEProblem(rhs_var, x0δx0, tspan, λ)
-              sol = solve(ivp, alg=algo; ode_kwargs...)
-              return sol
-            end
-
+            #dt = get(ode_kwargs, :dt, (tf-t0)/100)
+            ivp = ODEProblem(rhs_var, x0δx0, tspan, λ)
+            sol = solve(ivp, alg=algo; ode_kwargs...)
+            return sol
         end
     end
 
@@ -168,20 +154,117 @@ end
 function build_∂λ_flow_var(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; backend = AutoForwardDiff()) #,print_step=false)
     rhs_var = built_rhs_var(rhs , wrt = :λ, backend = backend)
 
-    function ∂λ_flow(tspan::Tuple{<:Real,<:Real},x0::Vector{<:Real}, λ::Vector{<:Real}; ode_kwargs...)
-        n = length(x0); p = length(λ)
-        x0δλ0 = [x0 zeros(n,p)]
-        ivp = ODEProblem(rhs_var, x0δλ0, tspan, λ)
+    function ∂λ_flow(tspan::Tuple{<:Real,<:Real},x0::Vector{<:Real}, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
+        n = length(x0)
+        p = length(λ)
+        x0δλ = [x0 zeros(n,p)]
         algo = get(ode_kwargs, :alg, Tsit5())
-        sol = solve(ivp, alg=algo; ode_kwargs...)
-        return sol
+        reltol = get(ode_kwargs, :reltol, 1.e-3)
+        abstol = get(ode_kwargs, :abstol, 1.e-6)
+        @assert (typeof(reltol)<:Real || length(reltol)==n || size(reltol)==(n,p+1)) "Error in the dimension of reltol" 
+        adaptive = get(ode_kwargs, :adaptive, true)
+        if adaptive
+            my_Inf = prevfloat(typemax(Float64))
+            n = length(x0)
+            p = n
+            if typeof(reltol) <: Real
+              RelTol = [reltol*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+            elseif length(reltol)==n
+              RelTol = [reltol.*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+            else  # reltol is a Matix (n,n+1)
+              RelTol = reltol
+            end
+            if typeof(abstol) <: Real
+              AbsTol = [abstol*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+            elseif length(reltol)==n
+              AbsTol = [abstol.*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+            else  # reltol is a Matix (n,n+1)
+              AbsTol = abstol
+            end
+            algo = get(ode_kwargs, :alg, Tsit5())
+            ivp = ODEProblem(rhs_var, x0δλ, tspan, λ)
+            sol = solve(ivp, alg=algo; ode_kwargs..., reltol=RelTol, abstol=AbsTol)
+            return sol
+        else
+            ivp = ODEProblem(rhs_var, x0δλ , tspan, λ)
+            sol = solve(ivp, alg=algo; ode_kwargs...)
+            return sol
+        end
     end
 
     function ∂λ_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; ode_kwargs...)
-        sol = ∂λ_flow((t0,tf),x0,λ; ode_kwargs...)
+        sol = ∂λ_flow((t0,tf),x0,λ; print_times=false, ode_kwargs...)
         return sol.u[end][:,2:end]
      end
     return ∂λ_flow
+end
+
+# derivatives with respect to t0
+function build_∂t0_flow_var(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; backend = AutoForwardDiff())
+    rhs_var = built_rhs_var(rhs , wrt = :x0, backend = backend)
+
+    function ∂t0_flow(tspan::Tuple{<:Real,<:Real},x0::Vector{<:Real}, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
+        n = length(x0)
+        p = 1
+        x0δλ = [x0 -rhs(x0,λ,t0)]
+        algo = get(ode_kwargs, :alg, Tsit5())
+        reltol = get(ode_kwargs, :reltol, 1.e-3)
+        abstol = get(ode_kwargs, :abstol, 1.e-6)
+        @assert (typeof(reltol)<:Real || length(reltol)==n || size(reltol)==(n,p+1)) "Error in the dimension of reltol" 
+        adaptive = get(ode_kwargs, :adaptive, true)
+        if adaptive
+            my_Inf = prevfloat(typemax(Float64))
+            n = length(x0)
+            p = n
+            if typeof(reltol) <: Real
+              RelTol = [reltol*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+            elseif length(reltol)==n
+              RelTol = [reltol.*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+            else  # reltol is a Matix (n,n+1)
+              RelTol = reltol
+            end
+            if typeof(abstol) <: Real
+              AbsTol = [abstol*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+            elseif length(reltol)==n
+              AbsTol = [abstol.*ones(n,1) my_Inf*ones(n,p)]/sqrt(p+1)
+            else  # reltol is a Matix (n,n+1)
+              AbsTol = abstol
+            end
+            algo = get(ode_kwargs, :alg, Tsit5())
+            ivp = ODEProblem(rhs_var, x0δλ, tspan, λ)
+            sol = solve(ivp, alg=algo; ode_kwargs..., reltol=RelTol, abstol=AbsTol)
+            return sol
+        else
+            ivp = ODEProblem(rhs_var, x0δλ , tspan, λ)
+            sol = solve(ivp, alg=algo; ode_kwargs...)
+            return sol
+        end
+    end
+
+    function ∂t0_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; ode_kwargs...)
+        sol = ∂λ_flow((t0,tf),x0,λ; print_times=false, ode_kwargs...)
+        return sol.u[end][:,2:end]
+     end
+    return ∂t0_flow
+end
+
+function build_∂tf_flow_var(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; backend = AutoForwardDiff())
+    function ∂tf_flow(t0::Real,x0::Vector{<:Real}, tf::Real, λ::Vector{<:Real}; print_times=false, ode_kwargs...)
+        algo = get(ode_kwargs, :alg, Tsit5())
+        adaptive = get(ode_kwargs, :adaptive, true)
+        if adaptive
+            reltol = get(ode_kwargs, :reltol, 1.e-3)
+            abstol = get(ode_kwargs, :abstol, 1.e-6)
+            ivp = ODEProblem(rhs, x0, tspan, λ)
+            sol = solve(ivp, alg=algo; ode_kwargs..., reltol=RelTol, abstol=AbsTol)
+            xf = sol[:,end]
+        else
+            ivp = ODEProblem(rhs_var, x0δλ , tspan, λ)
+            sol = solve(ivp, alg=algo; ode_kwargs...)
+            xf = sol[:,end]
+        end
+        return f(xf,λ,tf)
+    end
 end
 
 function build_∂x0_flow_ind(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real, λ::Vector{<:Real}; backend = AutoForwardDiff())
@@ -193,37 +276,17 @@ function build_∂x0_flow_ind(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
 # derivatives with respect to x0
         algo = get(ode_kwargs, :alg, Tsit5())
         adaptive = get(ode_kwargs, :adaptive, true)
-        if algo=="myode43"
-            Rtol = get(ode_kwargs, :reltol, 1.e-3)
-            Atol = get(ode_kwargs, :abstol, 1.e-6)
-            internalnorm = get(ode_kwargs, :internalnorm, :default)
-            T,X = myode43(rhs,x0,λ,(t0,tf),Rtol,Atol; internalnorm=internalnorm)
-        else
-            ivp = ODEProblem(rhs, x0, (t0,tf), λ)
-            sol = solve(ivp, alg=algo; ode_kwargs...)
-            T = sol.t
-        end
+        ivp = ODEProblem(rhs, x0, (t0,tf), λ)
+        sol = solve(ivp, alg=algo; ode_kwargs...)
+        T = sol.t
 
 
         
         function _flow(x0)
-            if algo=="myode43"
-                if adaptive
-                  Rtol = get(ode_kwargs, :reltol, 1.e-3)
-                  Atol = get(ode_kwargs, :abstol, 1.e-6)
-                  T,X = myode43(rhs,x0,λ,(t0,tf),Rtol,Atol)
-                else
-                  dt = get(ode_kwargs, :dt, (tf-t0)/100)
-                  T,X = myode43(rhs,x0,λ,t0:dt:tf)
-                end    
-                return X[end]
-            else
-
-                ivp = ODEProblem(rhs, x0, (t0,tf), λ)
-                sol = solve(ivp, alg=algo; ode_kwargs...)
-                T = sol.t
-                return sol.u[end]
-            end
+            ivp = ODEProblem(rhs, x0, (t0,tf), λ)
+            sol = solve(ivp, alg=algo; ode_kwargs...)
+            T = sol.t
+            return sol.u[end]
         end
         if print_times
             return jacobian(_flow,backend,x0), T

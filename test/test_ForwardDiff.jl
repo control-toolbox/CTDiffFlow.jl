@@ -1,6 +1,6 @@
 using Pkg
-#Pkg.activate(".")
-Pkg.activate("../")
+Pkg.activate(".")
+#Pkg.activate("../")
 #Pkg.add("ReverseDiff")
 #Pkg.add("DataFrames")
 #Pkg.add("SciMLSensitivity")
@@ -146,9 +146,9 @@ sol_∂xO_flow = exp(tf*A(λ))
 
 df_sol = DataFrame(adaptive=Bool[], VAR_IND=String[], internalnorm=String[], norm_∞_error=Real[], norm_∞_diff=Real[], time_steps=Vector[])
 
-#test_FD!(df_sol,fun_lin, tspan, x0, λ, sol_∂xO_flow,false)
+test_FD!(df_sol,fun_lin, tspan, x0, λ, sol_∂xO_flow,true)
 
-#println(df_sol)
+println(df_sol)
 
 # with my_norm the diagram switches 
 sse(x::Number) = x^2
@@ -162,8 +162,8 @@ function my_norm(u, t)
   return sqrt(sum(x -> sse(x), u) / totallength(u))
 end
 
-df_sol, Sol = test_FD!(df_sol,fun_lin, tspan, x0, λ, sol_∂xO_flow,true,internalnorm=my_norm)#, Algorithmes = ((RK4(), 3),))
-println(df_sol)
+#df_sol, Sol = test_FD!(df_sol,fun_lin, tspan, x0, λ, sol_∂xO_flow,true,internalnorm=my_norm)#, Algorithmes = ((RK4(), 3),))
+#println(df_sol)
 
 #=
 
