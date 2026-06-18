@@ -10,8 +10,8 @@ using Zygote: Zygote
 using SciMLSensitivity
 using DifferentiationInterface
 
-include("../../src/DiffFlow.jl")
-using .DiffFlow
+include("../../src/CTDiffFlow.jl")
+using .CTDiffFlow
 #
 # Definition of the second member
 function bruss(x, par, t)
@@ -26,7 +26,7 @@ tf = 20.0
 tspan = (t0, tf)
 λ = [3.0]
 x01 = 1.3
-funx0(λ) = [x01, λ[1]]
+x0 = [x01, λ[1]]
 tol = 1.e-4
 
 plt1 = plot();
@@ -36,9 +36,12 @@ reltol = 1.e-4;
 abstol = 1.e-4
 
 function graph_eq_var(plt1, plt2)
-    ∂λ_flow_var = DiffFlow.build_∂λ_flow_var(bruss, t0, funx0, tf, λ)
+    ∂x0_flow_var = CTDiffFlow.build_∂flow(bruss, t0, x0, tf, λ;var_ind = :var, wrt = :x0)
+    ∂λ_flow_var = CTDiffFlow.build_∂flow(bruss, t0, x0, tf, λ;var_ind = :var, wrt = :λ)
 
-    println(∂λ_flow_var(t0, funx0, tf, λ; reltol=reltol, abstol=abstol))
+    println("∂x0_flow_var = ", ∂x0_flow_var(t0, x0, tf, λ; reltol=reltol, abstol=abstol))
+    println("∂λ_flow_var = ", ∂λ_flow_var(t0, x0, tf, λ; reltol=reltol, abstol=abstol))
+    
     # ne fonctionne pas 
     # @btime ∂λ_flow_var(t0,funx0,tf,λ;reltol=reltol,abstol=abstol)
     #println(∂x0_flow_var(t0,funx0,tf,λ;reltol=reltol, abstol=abstol))
@@ -47,9 +50,11 @@ function graph_eq_var(plt1, plt2)
     n = 2;
     N = length(Λ)
     fdiff = zeros(N, n)
-
+    ∂_λ_x0 = [0.,1]
     for i in 1:N
-        fdiff[i, :] = ∂λ_flow_var(t0, funx0, tf, [Λ[i]]; reltol=reltol, abstol=abstol)
+        x0 = [x01, λ[1]]
+        fdiff[i, :] = ∂λ_flow_var(t0, x0, tf, [Λ[i]]; reltol=reltol, abstol=abstol)
+                      + ∂x0_flow_var(t0, x0, tf, [Λ[i]]; reltol=reltol, abstol=abstol)*∂_λ_x0
     end
     plot!(
         plt1,
@@ -81,17 +86,20 @@ plt = plot(plt1, plt2)
 savefig(plt, "article/figures/plot_var1.png")
 
 function graph_diff_auto_flow(plt1, plt2)
-    ∂λ_flow = DiffFlow.build_∂λ_flow(bruss, t0, funx0, tf, λ)
-    δλ = [1.0]
-    println(∂λ_flow(t0, funx0, tf, λ; reltol=reltol, abstol=abstol))
-
+    ∂x0_flow_ind = CTDiffFlow.build_∂flow(bruss, t0, x0, tf, λ;var_ind = :ind, wrt = :x0)
+    ∂λ_flow_ind = CTDiffFlow.build_∂flow(bruss, t0, x0, tf, λ;var_ind = :var, wrt = :λ)
+    println(∂x0_flow_ind(t0, x0, tf, λ; reltol=reltol, abstol=abstol))
+    println("∂λ_flow_ind = ", ∂λ_flow_ind(t0, x0, tf, λ; reltol=reltol, abstol=abstol))
+    
     Λ = range(2.88; stop=3.08, length=1001)
     n = 2;
     N = length(Λ)
     fdiff = zeros(N, n)
-
+    ∂_λ_x0 = [0.,1]
     for i in 1:N
-        fdiff[i, :] = ∂λ_flow(t0, funx0, tf, [Λ[i]]; reltol=reltol, abstol=abstol)
+        x0 = [x01, λ[1]]
+        fdiff[i, :] = ∂λ_flow_ind(t0, x0, tf, [Λ[i]]; reltol=reltol, abstol=abstol)
+                      + ∂x0_flow_ind(t0, x0, tf, [Λ[i]]; reltol=reltol, abstol=abstol)*∂_λ_x0
     end
     plot!(
         plt1,
@@ -125,4 +133,4 @@ end
 graph_diff_auto_flow(plt1, plt2)
 
 plt = plot(plt1, plt2)
-savefig(plt, "article/figures/plot_diff_flow1.png")
+#savefig(plt, "article/figures/plot_diff_flow1.png")

@@ -17,7 +17,7 @@ using DifferentiationInterface
 
 using ForwardDiff: ForwardDiff
 #using Enzyme: Enzyme
-using Mooncake: Mooncake
+#using Mooncake: Mooncake
 #using Zygote: Zygote
 #using ReverseDiff: ReverseDiff
 
@@ -48,9 +48,9 @@ function main(adaptive,internalnorm = :default)
 
 
     # Test of convergence with different the numerical integration algorithms
-    #Algorithmes = (Euler(), (RK4(), 3), (Tsit5(), 5),(RadauIIA5(), 9))
+    #Algorithmes = ((Euler(),5), (RK4(), 3), (Tsit5(), 5),(RadauIIA5(), 9))
     Algorithmes = ((RK4(), 3), (Tsit5(), 5),(RadauIIA5(), 9))
-   
+   #Algorithmes = ((Tsit5(), 5),)
     df_algo = DataFrame(VAR_IND=String[], backend=String[], adaptive=Bool[], cv=Bool[])
     
 
@@ -64,12 +64,12 @@ function main(adaptive,internalnorm = :default)
         sol = solve(ivp, alg=algo, reltol = reltol, abstol = abstol)
         push!(df_algo, ["IVP", name_algo, adaptive, true])
         T = sol.t
-        for var_ind in ("IND", "VAR2", "VAR1")
+        for var_ind in ("IND", "VAR2")#, "VAR1")
           for backend in Backends
             if var_ind == "IND"
               RelTol = reltol
               AbsTol = abstol
-              ∂x0_flow = CTDiffFlow.build_∂x0_flow(fun_lin2, t0, x0, tf, λ; var_ind=:ind, backend = backend)
+              ∂x0_flow = CTDiffFlow.build_∂x0_flow(fun_lin2, t0, x0, tf, λ; var_ind=:ind, internalnorm = internalnorm, backend = backend)
             elseif var_ind =="VAR2"
               RelTol = reltol
               AbsTol = abstol
@@ -84,7 +84,14 @@ function main(adaptive,internalnorm = :default)
               ∂x0_flow = CTDiffFlow.build_∂x0_flow(fun_lin2, t0, x0, tf, λ; backend = backend)
             end
               try
-                  sol, T = ∂x0_flow(t0, x0, tf, λ; print_times=true, alg=algo, adaptive=adaptive, reltol=RelTol, abstol=AbsTol)
+                  if adaptive
+                      sol, T = ∂x0_flow(t0, x0, tf, λ; print_times=true, alg=algo, adaptive=adaptive, reltol=RelTol, abstol=AbsTol)
+                  else
+                      N = 10
+                      dt = (tf-t0)/N
+                      println("var_ind = ", var_ind)
+                      sol, T = ∂x0_flow(t0, x0, tf, λ; print_times=true, alg=algo, adaptive=adaptive, dt = dt, reltol=RelTol, abstol=AbsTol)
+                  end
                   push!(df_algo, [var_ind, string(backend), adaptive, true])
               catch
                   push!(df_algo, [var_ind, string(backend), adaptive, false])
@@ -109,13 +116,13 @@ function main(adaptive,internalnorm = :default)
         push!(df_sol, ["IVP", name_algo, NaN, NaN, sol.t[2:3]])
         T = sol.t
       ind = 1
-      for var_ind in ("IND", "VAR2", "VAR1")
+      for var_ind in ("IND", "VAR2")#, "VAR1")
       #for var_ind in ("IND",)
         for backend in Backends
           if var_ind == "IND"
             RelTol = reltol
             AbsTol = abstol
-            ∂x0_flow = CTDiffFlow.build_∂x0_flow(fun_lin2, t0, x0, tf, λ; var_ind=:ind, backend = backend)
+            ∂x0_flow = CTDiffFlow.build_∂x0_flow(fun_lin2, t0, x0, tf, λ; var_ind=:ind, internalnorm = internalnorm, backend = backend)
           elseif var_ind =="VAR2"
             RelTol = reltol
             AbsTol = abstol
@@ -131,11 +138,7 @@ function main(adaptive,internalnorm = :default)
             ∂x0_flow = CTDiffFlow.build_∂x0_flow(fun_lin2, t0, x0, tf, λ; backend = backend)
           end
           if adaptive
-              if internalnorm == :default
-                sol, T = ∂x0_flow(t0, x0, tf, λ; print_times=true, alg=algo, adaptive=true, reltol=RelTol, abstol=AbsTol)
-              else
-                sol, T = ∂x0_flow(t0, x0, tf, λ; internalnorm = internalnorm, print_times=true, alg=algo, adaptive=true, reltol=RelTol, abstol=AbsTol)
-              end
+              sol, T = ∂x0_flow(t0, x0, tf, λ; print_times=true, alg=algo, adaptive=true, reltol=RelTol, abstol=AbsTol)
           else
             println("adaptive = ", adaptive)
             N = 10
@@ -157,15 +160,25 @@ function main(adaptive,internalnorm = :default)
     return df_algo, df_sol,Sol
   end
 
-using SciMLSensitivity
+#using SciMLSensitivity
 
 # in the automatic differentiation of the flow there is h'(p) the step derivative, 
 # so the diagram doesn't switch
-#=
-df_algo, df_sol, Sol = main(true)
+# my_norm2 is the norm of 
+# https://github.com/ODINN-SciML/DiffEqSensitivity-Review/blob/main/code/SensitivityForwardAD/example-AD-tolerances.jl
+sse2(x::Number) = x^2
+sse2(x::ForwardDiff.Dual) = sse2(ForwardDiff.value(x)) + sum(sse2, ForwardDiff.partials(x))
+totallength2(x::Number) = 1
+function totallength2(x::ForwardDiff.Dual)
+  totallength2(ForwardDiff.value(x)) + sum(totallength2, ForwardDiff.partials(x))
+end
+totallength2(x::AbstractArray) = sum(totallength2, x)
+my_norm2 = (u, t) -> sqrt(sum(x -> sse2(x), u) / totallength2(u))
+df_algo2, df_sol2, Sol2 = main(true, my_norm2)
 #println(df_algo)
-println(df_sol)
-=#
+println(df_sol2)
+
+
 # with my_norm the diagram switches 
 sse(x::Number) = x^2
 sse(x::ForwardDiff.Dual) = sse(ForwardDiff.value(x)) #+ sum(sse, ForwardDiff.partials(x))
@@ -176,6 +189,8 @@ end
 totallength(x::AbstractArray) = sum(totallength, x)
 my_norm = (u, t) -> sqrt(sum(x -> sse(x), u) / totallength(u))
 
-df_algo, df_sol, Sol = main(false, my_norm)
+df_algo, df_sol, Sol = main(true)
 #println(df_algo)
 println(df_sol)
+
+Matrix(df_sol2[:,3:end])-Matrix(df_sol[:,3:end])

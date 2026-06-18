@@ -119,7 +119,7 @@ function graph_END()
     )
     plt_END = plot(p5, p6, p7, p8; layout=(2, 2), legend=false)
 
-savefig(plt_END, "docs/assets/plot_END.png")
+#savefig(plt_END, "docs/assets/plot_END.png")
 end
 
 graph_END()
