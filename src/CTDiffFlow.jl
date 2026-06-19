@@ -606,7 +606,6 @@ function build_∂x0_flow_end(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
           abstol = get(ode_kwargs, :abstol, 1.e-6)
           δx0 = sqrt(max(maximum(reltol),maximum(abstol)))
         end
-        println("δx0 = ", δx0)
 
         # derivatives with respect to x0
         function _flow(x0)
@@ -616,9 +615,14 @@ function build_∂x0_flow_end(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
             return sol.u[end]
         end
         n = length(x0)
-        X0 = x0*ones(1,n)
-        δX0 = X0 + δx0*I
-        return (_flow(δX0) - _flow(X0))/δx0
+        ∂x0_flow_x0 = zeros(n,n)
+        flow_x0 = _flow(x0)
+        for j in 1:n
+           ej = zeros(n)
+           ej[j] = 1.
+           ∂x0_flow_x0[:,j] = (_flow(x0 + δx0*ej) - flow_x0)/δx0
+        end
+        return ∂x0_flow_x0
      end
     return ∂x0_flow
 end
@@ -636,7 +640,6 @@ function build_∂λ_flow_end(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
           abstol = get(ode_kwargs, :abstol, 1.e-6)
           δλ = sqrt(max(maximum(reltol),maximum(abstol)))
         end
-        println("δλ = ", δλ)
 
         # derivatives with respect to x0
         function _flow(λ)
@@ -651,8 +654,6 @@ function build_∂λ_flow_end(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
         for j in 1:p
            ej = zeros(p)
            ej[j] = 1.
-           println(_flow(λ + δλ*ej))
-           flow_λ
            ∂λ_flow_λ[:,j] = (_flow(λ + δλ*ej) - flow_λ)/δλ
         end
         return ∂λ_flow_λ
@@ -673,7 +674,6 @@ function build_∂t0_flow_end(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
           abstol = get(ode_kwargs, :abstol, 1.e-6)
           δt0 = sqrt(max(maximum(reltol),maximum(abstol)))
         end
-        println("δt0 = ", δt0)
 
         # derivatives with respect to x0
         function _flow(t0)
@@ -700,7 +700,6 @@ function build_∂tf_flow_end(rhs::Function,t0::Real,x0::Vector{<:Real},tf::Real
           abstol = get(ode_kwargs, :abstol, 1.e-6)
           δtf = sqrt(max(maximum(reltol),maximum(abstol)))
         end
-        println("δtf = ", δtf)
 
         # derivatives with respect to x0
         function _flow(tf)
