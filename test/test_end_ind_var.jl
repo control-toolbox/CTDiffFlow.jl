@@ -1,7 +1,6 @@
 function test_end_ind_var()
 # unitary test for the derivative of the flow
   tol_error = eps()
-  @testset verbose = true "end_ind_var" begin
         backend = AutoForwardDiff()
         # linear ode example
         @testset "linear example" begin
@@ -104,6 +103,7 @@ function test_end_ind_var()
           wrt = :x0
           rtol = sqrt(reltol)
           atol = sqrt(abstol)
+          tol_error = 10*eps()
           ∂x0_flow = CTDiffFlow.build_∂flow(rhs_bruss, t0, x0, tf, λ; var_ind= :end, wrt = wrt)#, δh=1.e-10)
           sol_end = ∂x0_flow(t0, x0, tf, λ; adaptive=true, reltol=reltol, abstol=abstol)
           # ind
@@ -113,8 +113,8 @@ function test_end_ind_var()
           # var
           ∂x0_flow = CTDiffFlow.build_∂flow(rhs_bruss, t0, x0, tf, λ; var_ind= :var, wrt = wrt)
           sol_var = ∂x0_flow(t0, x0, tf, λ; adaptive=true, reltol=reltol, abstol=abstol)
-          atol = 10*eps()
-          rtol = 10*eps()
+          atol = tol_error#10*eps()
+          rtol = tol_error#10*eps()
           @test isapprox(sol_ind, sol_var, atol=atol, rtol=rtol)      
           # wrt λ
           wrt = :λ
@@ -167,6 +167,5 @@ function test_end_ind_var()
           @test isapprox(sol_end, sol_var, atol=atol, rtol=rtol)    
           @test isapprox(sol_ind, sol_var, atol=atol, rtol=rtol)  
         end
-        
-      end;
-    end
+
+end

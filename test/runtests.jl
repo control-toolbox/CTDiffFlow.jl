@@ -17,7 +17,8 @@ include("ode_examples.jl")
 #
 @testset verbose = true showtiming = true "CTDiffFlow tests" begin
     #for name in (:aqua, :default, :eq_var_rhs)
-    for name in (:eq_var_rhs, :end_ind_var)
+    for name in (:eq_var_rhs, :end_ind_var, :CTFlows)
+    #for name in (:CTFlows,)
         @testset verbose = true "$(name)" begin
             test_name = Symbol(:test_, name)
             include("$(test_name).jl")
@@ -25,3 +26,4 @@ include("ode_examples.jl")
         end
     end
 end
+println()

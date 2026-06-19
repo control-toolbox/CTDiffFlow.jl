@@ -2,7 +2,6 @@ function test_eq_var_rhs()
 # unitary test for the derivative of the right hand side of the ivp 
 # wrt the initial condition x0 and the parameter λ
   tol_error = eps()
-  @testset verbose = true "eq_var_rhs" begin
         backend = AutoForwardDiff()
         # linear ode example
         @testset "linear example" begin
@@ -30,5 +29,4 @@ function test_eq_var_rhs()
           xδλ = xδx[:,1:p+1]
           @test isapprox(rhs_var_λ(xδλ,λ,t0), bruss.eq_var_λ(xδλ,λ,t0), atol=tol_error)
         end
-      end;
-    end
+end
