@@ -10,25 +10,25 @@ This GitHub repository tests the different possibility in Julia for computing th
 
 ```math
 (IVP)\left\{\begin{array}{l}
-\dot{x} = f(t,x(t))\\
+\dot{x} = f(t,x(t),\lambda)\\
 x(t_0) = x_0\\
 \end{array}
 \right.
 ```
 
-where $f$ is a smooth function. We denote $x(t,t_0,x_0)$ the flow of this $(IVP)$ at time $t$.  
-The objective is to compute the derivatives at the final time $t_f$ with respect to the initial condition, that is 
+where $f$ is a smooth function. We denote $x(t,t_0,x_0,\lambda)$ the flow of this $(IVP)$ at time $t$.  
+The objective is to compute the derivatives of this flow at the final time $t_f$ with respect to the initial condition, the parameter $\lambda$, the intitail time $t_0$ and the final time $t_f$ that is 
 ```math
-\frac{\partial x}{\partial x_0}(t_f,t_0,x_0)
+\frac{\partial x}{\partial x_0}(t_f,t_0,x_0,\lambda), \frac{\partial x}{\partial \lambda}(t_f,t_0,x_0,\lambda), \frac{\partial t_0}{\partial x_0}(t_f,t_0,x_0,\lambda), \frac{\partial t_f}{\partial x_0}(t_f,t_0,x_0,\lambda)
 ```
 
-It's well know that the finite differences on the numerical flow for approximating this derivative, known in the literature as the External Numerical Differentiation[^1], doesn't give good results. For example, if we compute des derivative with respect ti the paramater $\lambda$ ov the Brusselator example[^2]
+It's well know that the finite differences on the numerical flow for approximating this derivative, known in the literature as the External Numerical Differentiation[^1], doesn't give good results. For example, if we compute des derivative with respect to the paramater $\lambda$ of the Brusselator example[^2]
 
 $$(IVP)\left\{\begin{array}{l}
 \dot{x}_1 = 1+x_1^2x_2-(\lambda+1)x_1\\
 \dot{x}_2 = \lambda x_1-x_1^2x_2\\
-x_1(0) = 1.3\\
-x_2(0) = \lambda.
+x(0) = xO(\lambda)=\begin{pmatrix} 1.3\\
+\lambda\end{pmatrix}.
 \end{array}
 \right.$$
 
@@ -36,25 +36,22 @@ We obtain
 
 ```@raw html
 <figure>
-<img width="800" alt="affiliations" src="./assets/plot_END.png"/>
-<figcaption> Derivative computing by finite differences. $t_f=20, \lambda$ ranging from 2.88 to 3.08, $Tol=RelTol=AbsTol=10^{-4}$. Top graphs is for  $\delta\lambda=4Tol$ and bottom graphs for $\delta\lambda=\sqrt{Tol}$. The numerical integrattion is done with Tsit5().
+<img width="800" alt="affiliations" src="./assets/plot_end_bruss.png"/>
+<figcaption> Derivative computing by finite differences. $t_f=20, \lambda$ ranging from 2.88 to 3.08, $Tol=reltol=abstol=10^{-3}$. Top graphs is for  $\delta\lambda=4Tol$ and bottom graphs for $\delta\lambda=\sqrt{Tol}$. The numerical integrattion is done with Tsit5().
+</figcaption>
+</figure>
+```
+But if we use the variational equations then we obtain
+we obtain
+```@raw html
+<figure>
+<img width="800" alt="affiliations" src="./assets/plot_var_bruss.png"/>
+<figcaption> Derivative computing by variational equations (top) ans by internal numerical differentiation (bottom). The numerical integrattion is done with Tsit5() and $Tol=reltol=abstol=10^{-3}$.
 </figcaption>
 </figure>
 ```
 
-The other possilities for computing this derivative are
-* to integrate the variational equation
-
-```math
-\def\dx{\delta x}
-\def\ddx{\dot{\wideparen{\delta x}}}
-{VAR\ivpref\label{varlambda}})
-\left\{\begin{array}{l}
-\ddx(t)=A(t)\dx(t)\\
-\dx(t_0)=x_0,
-\end{array}\right.
-```
-
+In the first section, we'll present the different method for computing these derivatives
 * to use the automatic differentiation on the flow, what is known also in the literature as the Internal Numerical Differentiation[^1].
 to do : explain that it's necessary not to differentate the step h(p) and the "number of iterations for solving the non linear equations in case of implicit method.
 
@@ -70,6 +67,7 @@ So the following scheme commutes
 \end{CD}
 ```
 -->
+
 
 
 [^1]: H. G. Bock, *Numerical treatment of inverse problems in chemical reaction kinetics*, in K. H. Ebert, P. Deuflhard, and W. Jäger, editors, *Modelling of Chemical Reaction Systems*, volume 18 of *Springer Series in
