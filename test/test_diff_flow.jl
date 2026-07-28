@@ -148,9 +148,9 @@ println("ccc", sol_∂xO_flow-∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=a
 println(
     "ddd",
     (
-        my_∂x0_flow(
+        my_∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol)-∂x0_flow(
             t0, x0, tf, λ; reltol=reltol, abstol=abstol
-        )-∂x0_flow(t0, x0, tf, λ; reltol=reltol, abstol=abstol)
+        )
     ),
 )
 @test isapprox(
