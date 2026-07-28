@@ -44,7 +44,7 @@ function graph_eq_var(plt1, plt2)
     #println(∂x0_flow_var(t0,funx0,tf,λ;reltol=reltol, abstol=abstol))
 
     Λ = range(2.88; stop=3.08, length=1001)
-    n = 2;
+    n = 2
     N = length(Λ)
     fdiff = zeros(N, n)
 
@@ -59,7 +59,7 @@ function graph_eq_var(plt1, plt2)
         ylabel=L"\frac{\partial x_1}{\partial \lambda}(t_f,\lambda)",
         lw=3,
     )
-    plot!(
+    return plot!(
         plt2,
         Λ,
         fdiff[:, 2];
@@ -86,7 +86,7 @@ function graph_diff_auto_flow(plt1, plt2)
     println(∂λ_flow(t0, funx0, tf, λ; reltol=reltol, abstol=abstol))
 
     Λ = range(2.88; stop=3.08, length=1001)
-    n = 2;
+    n = 2
     N = length(Λ)
     fdiff = zeros(N, n)
 
@@ -117,7 +117,7 @@ function graph_diff_auto_flow(plt1, plt2)
 
     #| label: fig-finite-diff-DP5
     #| fig-cap: "Derivative computing by finite differences. $t_f=20, \\lambda$ ranging from 2.88 to 3.08, $Tol=RelTol=AbsTol=10^{-4}$. Top graphs is for  $\\delta\\lambda=4Tol$ and bottom graphs for $\\delta\\lambda=\\sqrt{Tol}$. The numerical integrattion is done with DP5()."
-    algo = DP5()
+    return algo = DP5()
 
     #savefig(plt_diff_flow1, "plot_diff_flow1.png")
 end

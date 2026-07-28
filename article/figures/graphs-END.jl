@@ -18,8 +18,8 @@ tol = 1.e-4
 
 function graph_END()
     function END(fun, x₁0, tf, tol, λ, δλ; algo=Tsit5())
-        reltol = tol;
-        abstol = tol;
+        reltol = tol
+        abstol = tol
         tspan = (0.0, tf)
         x0 = [x₁0, λ+δλ]
         ivp = ODEProblem(fun, x0, tspan, (λ+δλ))
@@ -31,7 +31,7 @@ function graph_END()
     end
 
     Λ = range(2.88; stop=3.08, length=1001)
-    n = 2;
+    n = 2
     N = length(Λ)
     fdiff = zeros(N, n)
     δλ = 4*tol
@@ -117,7 +117,7 @@ function graph_END()
     )
     plt_END = plot(p5, p6, p7, p8; layout=(2, 2), legend=false)
 
-    savefig(plt_END, "article/figures/plot_END.png")
+    return savefig(plt_END, "article/figures/plot_END.png")
 end
 
 graph_END()
